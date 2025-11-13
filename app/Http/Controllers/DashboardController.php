@@ -7,6 +7,7 @@ use App\Models\Kategori;
 use App\Models\Petugas;
 use App\Models\Page;
 use App\Models\User;
+use App\Models\Agenda;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -35,6 +36,12 @@ class DashboardController extends Controller
             ->join('posts', 'galery.post_id', '=', 'posts.id')
             ->orderBy('posts.created_at', 'desc')
             ->select('galery.*')
+            ->limit(5)
+            ->get();
+        
+        // Get recent agenda (last 5) - order by created_at
+        $recentAgenda = Agenda::where('status', 'aktif')
+            ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
         
@@ -71,6 +78,7 @@ class DashboardController extends Controller
             'totalUsers',
             'recentGaleri',
             'pendingGaleri',
+            'recentAgenda',
             'recentActivities',
             'galeriGrowth',
             'visitorGrowth',

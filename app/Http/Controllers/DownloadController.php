@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Download Controller
@@ -79,22 +80,45 @@ class DownloadController extends Controller
      */
     public function download(Request $request, $token)
     {
+        Log::info('Download request received', [
+            'token' => $token,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
         $filePath = Cache::get('download_token_' . $token);
 
         if (!$filePath) {
+            Log::warning('Download token not found or expired', ['token' => $token]);
             abort(404, 'Download link expired or invalid');
         }
 
         $fullPath = public_path('uploads/galeri/' . $filePath);
 
+        Log::info('Attempting to download file', [
+            'file_path' => $filePath,
+            'full_path' => $fullPath,
+            'file_exists' => file_exists($fullPath)
+        ]);
+
         if (!file_exists($fullPath)) {
+            Log::error('File not found', ['full_path' => $fullPath]);
             abort(404, 'File not found');
         }
 
         // Delete token after use
         Cache::forget('download_token_' . $token);
 
-        return Response::download($fullPath);
+        Log::info('File download successful', ['file_path' => $filePath]);
+        
+        // Set headers for download
+        $headers = [
+            'Content-Type' => 'application/octet-stream',
+            'Content-Disposition' => 'attachment; filename="' . basename($fullPath) . '"',
+            'Content-Length' => filesize($fullPath),
+        ];
+        
+        return Response::download($fullPath, basename($fullPath), $headers);
     }
 
     /**

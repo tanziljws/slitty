@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda - SMKN 4 BOGOR</title>
+    <title>Agenda Sekolah - SMKN 4 BOGOR</title>
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -22,7 +20,6 @@
             background: #f8f9fa;
             color: #333;
             line-height: 1.6;
-            scroll-behavior: smooth;
         }
         
         .container {
@@ -73,10 +70,10 @@
             flex-shrink: 0;
         }
         
-        .brand-icon svg {
+        .brand-icon img {
             width: 100%;
             height: 100%;
-            filter: drop-shadow(0 2px 4px rgba(30, 58, 138, 0.2));
+            object-fit: contain;
         }
         
         .brand-text h1 {
@@ -132,28 +129,9 @@
             background: #3b82f6;
         }
         
-        .login-btn {
-            background: #3b82f6;
-            color: white;
-            padding: 10px 24px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
-        
-        .login-btn:hover {
-            background: #2563eb;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-        }
-        
         /* Main Content */
         .main-content {
             padding: 60px 0;
-            background: #f8f9fa;
         }
         
         .page-header {
@@ -230,6 +208,127 @@
             font-size: 16px;
         }
         
+        /* Footer Styles */
+        .footer {
+            background: #1e293b;
+            color: #cbd5e1;
+            padding: 60px 0 30px;
+            margin-top: 60px;
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .footer-branding .branding {
+            margin-bottom: 20px;
+        }
+        
+        .footer-branding .brand-text h3 {
+            color: white;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .footer-branding .brand-text p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        
+        .footer-description {
+            line-height: 1.6;
+            max-width: 350px;
+        }
+        
+        .footer-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 30px;
+        }
+        
+        .footer-section h4 {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+        
+        .footer-section h4::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background: #3b82f6;
+            border-radius: 2px;
+        }
+        
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .footer-section ul li {
+            margin-bottom: 12px;
+        }
+        
+        .footer-section ul li a {
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        
+        .footer-section ul li a:hover {
+            color: #3b82f6;
+            transform: translateX(5px);
+        }
+        
+        .footer-section ul li i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .social-links a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            background: #3b82f6;
+            transform: translateY(-3px);
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 20px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .agenda-grid {
@@ -261,6 +360,58 @@
                 width: 60px;
                 height: 70px;
             }
+            
+            .navbar {
+                padding: 0 20px;
+            }
+            
+            .footer {
+                padding: 40px 0 20px;
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .footer-links {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .agenda-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .container {
+                padding: 0 20px;
+            }
+            
+            .page-title {
+                font-size: 1.3rem;
+            }
+            
+            .page-subtitle {
+                font-size: 1rem;
+            }
+            
+            .brand-text h1 {
+                font-size: 20px;
+            }
+            
+            .brand-text p {
+                font-size: 12px;
+            }
+            
+            .footer-links {
+                grid-template-columns: 1fr;
+            }
+            
+            .social-links {
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -280,11 +431,12 @@
                 
                 <div class="nav-menu">
                     <ul class="nav-links">
-                        <li><a href="{{ route('user.dashboard') }}" class="nav-link">Beranda</a></li>
-                        <li><a href="{{ route('user.agenda') }}" class="nav-link active">Agenda</a></li>
-                        <li><a href="{{ route('user.informasi') }}" class="nav-link">Informasi</a></li>
-                        <li><a href="{{ route('user.gallery') }}" class="nav-link">Galeri</a></li>
+                        <li><a href="{{ route('user.dashboard') }}">Beranda</a></li>
+                        <li><a href="{{ route('user.gallery') }}">Galeri</a></li>
+                        <li><a href="{{ route('user.informasi') }}">Informasi</a></li>
+                        <li><a href="{{ route('user.agenda') }}" class="active">Agenda</a></li>
                     </ul>
+                    <!-- Removed login button as per user request -->
                 </div>
         </nav>
     </header>
@@ -293,43 +445,85 @@
     <main class="main-content">
         <div class="container">
             <div class="page-header">
-                <h1 class="page-title">Agenda Sekolah</h1>
-                <p class="page-subtitle">Jadwal kegiatan dan acara SMKN 4 Bogor</p>
+                <h1 class="page-title">{{ \App\Models\SiteSetting::get('agenda_title', 'Agenda Sekolah') }}</h1>
+                <p class="page-subtitle">{{ \App\Models\SiteSetting::get('agenda_description', 'Jadwal kegiatan dan acara SMKN 4 Bogor') }}</p>
             </div>
             
             <div class="agenda-grid">
+                @forelse($agendaItems as $item)
                 <div class="agenda-card">
-                    <div class="agenda-date">Senin</div>
-                    <h3 class="agenda-title">Rapat Guru</h3>
-                    <p class="agenda-description">Rapat guru untuk koordinasi kegiatan dan evaluasi pembelajaran.</p>
+                    <div class="agenda-date">{{ $item->date_label }}</div>
+                    <h3 class="agenda-title">{{ $item->title }}</h3>
+                    <p class="agenda-description">{{ $item->description }}</p>
                     <div class="agenda-time">
                         <i class="fas fa-clock"></i>
-                        <span>08:00 - 10:00 WIB</span>
+                        <span>{{ $item->time }}</span>
                     </div>
                 </div>
-                
-                <div class="agenda-card">
-                    <div class="agenda-date">Periode Akhir Semester</div>
-                    <h3 class="agenda-title">UJIAN AKHIR SEMESTER</h3>
-                    <p class="agenda-description">Pelaksanaan Ujian Akhir Semester untuk seluruh kelas.</p>
-                    <div class="agenda-time">
-                        <i class="fas fa-clock"></i>
-                        <span>06:30 - 14:00 WIB</span>
-                    </div>
+                @empty
+                <div class="col-span-full text-center py-10">
+                    <p class="text-gray-500">Belum ada agenda tersedia.</p>
                 </div>
-                
-                <div class="agenda-card">
-                    <div class="agenda-date">Pertengahan Semester</div>
-                    <h3 class="agenda-title">UJIAN TENGAH SEMESTER</h3>
-                    <p class="agenda-description">Pelaksanaan Ujian Tengah Semester untuk seluruh kelas.</p>
-                    <div class="agenda-time">
-                        <i class="fas fa-clock"></i>
-                        <span>06:30 - 14:00 WIB</span>
-                    </div>
-                </div>
+                @endforelse
             </div>
         </div>
     </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-branding">
+                    <div class="branding">
+                        <div class="brand-icon">
+                            <img src="{{ asset('images/LOGO_SMKN_4.png') }}" alt="SMKN 4 Bogor Logo">
+                        </div>
+                        <div class="brand-text">
+                            <h3>SMKN 4</h3>
+                            <p>Bogor</p>
+                        </div>
+                    </div>
+                    <p class="footer-description">
+                        Sekolah Menengah Kejuruan Negeri 4 Bogor adalah lembaga pendidikan kejuruan yang berkomitmen untuk menghasilkan lulusan yang kompeten dan berkarakter.
+                    </p>
+                </div>
+                
+                <div class="footer-links">
+                    <div class="footer-section">
+                        <h4>Quick Links</h4>
+                        <ul>
+                            <li><a href="{{ route('user.dashboard') }}">Beranda</a></li>
+                            <li><a href="{{ route('user.gallery') }}">Galeri</a></li>
+                            <li><a href="{{ route('user.informasi') }}">Informasi</a></li>
+                            <li><a href="{{ route('user.agenda') }}">Agenda</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>Kontak</h4>
+                        <ul>
+                            <li><i class="fas fa-map-marker-alt"></i> Jl. Raya Tajur No. 84, Kota Bogor</li>
+                            <li><i class="fas fa-phone"></i> (0251) 1234567</li>
+                            <li><i class="fas fa-envelope"></i> info@smkn4bogor.sch.id</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-section">
+                        <h4>Ikuti Kami</h4>
+                        <div class="social-links">
+                            <a href="{{ \App\Models\SiteSetting::get('social_facebook', '#') }}" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                            <a href="{{ \App\Models\SiteSetting::get('social_instagram', '#') }}" target="_blank"><i class="fab fa-instagram"></i></a>
+                            <a href="{{ \App\Models\SiteSetting::get('social_youtube', '#') }}" target="_blank"><i class="fab fa-youtube"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; {{ date('Y') }} SMKN 4 Bogor. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

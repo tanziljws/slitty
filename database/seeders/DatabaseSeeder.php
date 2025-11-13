@@ -13,26 +13,35 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Cek apakah user test@example.com sudah ada
+        $existingUser = User::where('email', 'test@example.com')->first();
+        if (!$existingUser) {
+            User::factory()->create([
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+            ]);
+        }
         
         // Seeder kategori default sesuai requirement UKK
-        \App\Models\Kategori::query()->delete();
+        // Hanya membuat kategori jika belum ada, tidak menghapus yang sudah ada
         $kategoriList = [
             'Informasi Terkini',
             'Galery Sekolah', 
             'Agenda Sekolah',
         ];
+        
         foreach ($kategoriList as $judul) {
-            \App\Models\Kategori::create(['judul' => $judul]);
+            // Cek apakah kategori sudah ada
+            $existingKategori = \App\Models\Kategori::where('judul', $judul)->first();
+            if (!$existingKategori) {
+                \App\Models\Kategori::create(['judul' => $judul]);
+            }
         }
 
-        // Panggil PetugasSeeder
-        $this->call(PetugasSeeder::class);
+        // Panggil seeder yang diperlukan
+        $this->call([
+            PetugasSeeder::class,
+            SiteSettingSeeder::class,
+        ]);
     }
 }
-

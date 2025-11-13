@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Galeri Foto - SMKN 4 BOGOR</title>
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -356,6 +357,69 @@
         
         .delete-btn:hover {
             background: #dc2626;
+        }
+        
+        /* Gallery Actions Container */
+        .gallery-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+            padding-top: 15px;
+        }
+        
+        .gallery-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .gallery-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-download-action {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .btn-download-action:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        .btn-like-action {
+            background: #f8fafc;
+            color: #64748b;
+            border-color: #e2e8f0;
+        }
+        
+        .btn-like-action:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        
+        .btn-like-action.liked {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #ef4444;
+        }
+        
+        .action-icon {
+            font-size: 16px;
+        }
+        
+        .action-count {
+            font-weight: 600;
+            font-size: 0.9rem;
         }
         
         /* Modal Styles */
@@ -758,7 +822,7 @@
                         <img src="{{ asset('uploads/galeri/' . $item->fotos->first()->file) }}" 
                              alt="{{ $item->post->judul ?? 'Gallery Image' }}" 
                              class="gallery-image"
-                             onclick="openGalleryModal({{ $item->id }})">
+                             onclick="openGalleryModal('{{ $item->id }}')">
                     @else
                         <div class="gallery-image" style="display: flex; align-items: center; justify-content: center; color: #cbd5e1;">
                             <i class="fas fa-image" style="font-size: 64px;"></i>
@@ -772,9 +836,19 @@
                             <p class="gallery-description"><i class="fas fa-images"></i> {{ $item->fotos->count() }} foto</p>
                         @endif
                         @if($item->fotos->count() > 0)
-                            <button class="btn-download" onclick="event.stopPropagation(); openDownloadModal('{{ $item->fotos->first()->file }}', '{{ $item->post->judul ?? 'Gallery Image' }}')">
-                                <i class="fas fa-download"></i> Download Foto
-                            </button>
+                            <?php $defaultTitle = "Gallery Image"; ?>
+                            <div class="gallery-actions">
+                                <button class="gallery-action-btn btn-download-action" onclick="event.stopPropagation(); openDownloadModal('{{ $item->fotos->first()->file }}', '{{ addslashes($item->post->judul ?? $defaultTitle) }}')">
+                                    <i class="fas fa-download action-icon"></i>
+                                    <span>Download</span>
+                                </button>
+                                
+                                <!-- Like Button -->
+                                <button class="gallery-action-btn btn-like-action" onclick="event.stopPropagation(); toggleLike('{{ $item->fotos->first()->id }}', this)">
+                                    <i class="fas fa-heart{{ $item->fotos->first()->likes > 0 ? '' : '-o' }} action-icon"></i>
+                                    <span class="action-count">{{ $item->fotos->first()->likes }}</span>
+                                </button>
+                            </div>
                         @endif
                     </div>
                     
@@ -913,11 +987,11 @@
             
             // Generate captcha
             try {
-                const response = await fetch('{{ route('download.captcha') }}', {
+                const response = await fetch("{{ route('download.captcha') }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
                 });
                 
@@ -944,11 +1018,11 @@
             }
             
             try {
-                const response = await fetch('{{ route('download.verify') }}', {
+                const response = await fetch("{{ route('download.verify') }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({
                         captcha_answer: answer,
@@ -960,9 +1034,13 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Redirect to download
-                    window.location.href = `/download/${data.download_token}`;
+                    // Close modal first
                     closeModal('downloadModal');
+                    
+                    // Then redirect to download after a short delay to ensure modal is closed
+                    setTimeout(() => {
+                        window.location.href = `/download/${data.download_token}`;
+                    }, 100);
                 } else {
                     errorDiv.textContent = data.message;
                     errorDiv.style.display = 'block';
@@ -1069,6 +1147,39 @@
         });
         
         // Halaman galeri kini read-only; tidak ada form CRUD
+        
+        // Like/Unlike Functionality
+        async function toggleLike(fotoId, button) {
+            try {
+                const response = await fetch(`/foto/${fotoId}/toggle-like`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update like count
+                    const likeCount = button.querySelector('.action-count');
+                    likeCount.textContent = data.likes;
+                    
+                    // Toggle liked class
+                    if (data.liked) {
+                        button.classList.add('liked');
+                    } else {
+                        button.classList.remove('liked');
+                    }
+                } else {
+                    alert('Gagal memperbarui like: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error toggling like:', error);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+            }
+        }
     </script>
 </body>
 </html>

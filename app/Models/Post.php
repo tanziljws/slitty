@@ -3,8 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Kategori;
+use App\Models\Petugas;
+use App\Models\Galery;
 
-class posts extends Model
+class Post extends Model
 {
     protected $table = 'posts';
     public $timestamps = true;
@@ -25,6 +28,6 @@ class posts extends Model
 
     public function galeries()
     {
-        return $this->hasMany(galery::class, 'post_id');
+        return $this->hasMany(Galery::class, 'post_id');
     }
 }

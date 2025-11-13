@@ -9,12 +9,30 @@ use App\Http\Controllers\AdminProfileController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DownloadController;
+use App\Http\Controllers\GalleryReportController;
+use App\Http\Controllers\FotoController;
 
 // -------------------------------
 // PUBLIC ROUTES (Tanpa Login)
 // -------------------------------
 Route::get('/', function () {
-    return view('user.dashboard');
+    // Get latest 5 galleries
+    $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
+        ->where('status', 'aktif')
+        ->orderBy(
+            \App\Models\Post::select('created_at')
+                ->whereColumn('posts.id', 'galery.post_id')
+        , 'desc')
+        ->limit(5)
+        ->get();
+    
+    // Get latest 4 agendas
+    $latestAgendas = \App\Models\Agenda::where('status', 'aktif')
+        ->orderBy('order')
+        ->limit(4)
+        ->get();
+    
+    return view('user.dashboard', compact('latestGalleries', 'latestAgendas'));
 })->name('user.dashboard');
 
 Route::get('/user/gallery', function () {
@@ -24,11 +42,13 @@ Route::get('/user/gallery', function () {
 })->name('user.gallery');
 
 Route::get('/user/agenda', function () {
-    return view('user.agenda');
+    $agendaItems = \App\Models\Agenda::where('status', 'aktif')->orderBy('order')->get();
+    return view('user.agenda', compact('agendaItems'));
 })->name('user.agenda');
 
 Route::get('/user/informasi', function () {
-    return view('user.informasi');
+    $informasiItems = \App\Models\Informasi::where('status', 'aktif')->orderBy('order')->get();
+    return view('user.informasi', compact('informasiItems'));
 })->name('user.informasi');
 
 // Public route untuk menampilkan pages
@@ -38,6 +58,9 @@ Route::get('/page/{slug}', [PageController::class, 'showBySlug'])->name('page.sh
 Route::post('/download/generate-captcha', [DownloadController::class, 'generateCaptcha'])->name('download.captcha');
 Route::post('/download/verify', [DownloadController::class, 'verifyCaptcha'])->name('download.verify');
 Route::get('/download/{token}', [DownloadController::class, 'download'])->name('download.file');
+
+// Foto routes
+Route::post('/foto/{id}/toggle-like', [FotoController::class, 'toggleLike'])->name('foto.toggle-like');
 
 // -------------------------------
 // AUTH ROUTES (Login/Logout)
@@ -59,15 +82,26 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Gallery Report Routes
+    Route::get('galeri/report', [GalleryReportController::class, 'index'])->name('galeri.report');
+    Route::get('galeri/report/pdf', [GalleryReportController::class, 'exportPdf'])->name('galeri.report.pdf');
+    
     // ✅ Resource CRUD routes
     Route::resource('kategori', KategoriController::class);
     Route::resource('galeri', GaleriController::class);
     Route::resource('petugas', PetugasController::class);
-    Route::resource('pages', PageController::class);
-
+    
+    // Informasi - Edit only (school identity)
+    Route::get('informasi', [\App\Http\Controllers\InformasiController::class, 'index'])->name('informasi.index');
+    Route::put('informasi', [\App\Http\Controllers\InformasiController::class, 'update'])->name('informasi.update');
+    
+    Route::resource('agenda', \App\Http\Controllers\AgendaController::class);
     // ✅ Toggle status routes
     Route::patch('galeri/{galeri}/toggle-status', [GaleriController::class, 'toggleStatus'])->name('galeri.toggleStatus');
-    Route::patch('pages/{page}/toggle-status', [PageController::class, 'toggleStatus'])->name('pages.toggleStatus');
+    
+    // Gallery Report Routes
+    Route::get('galeri/report', [GalleryReportController::class, 'index'])->name('galeri.report');
+    Route::get('galeri/report/pdf', [GalleryReportController::class, 'exportPdf'])->name('galeri.report.pdf');
 
     // Ganti route admin profile dari view langsung ke controller
     Route::get('/admin/profile', [AdminProfileController::class, 'index'])->name('admin.profile');
@@ -77,4 +111,13 @@ Route::middleware(['auth'])->group(function () {
     
     // **Route update password admin**
     Route::put('/admin/password', [AdminProfileController::class, 'updatePassword'])->name('admin.password.update');
+    
+    // **Site Settings Routes**
+    Route::prefix('admin/settings')->name('site-settings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SiteSettingController::class, 'index'])->name('index');
+        Route::get('/group/{group}', [\App\Http\Controllers\SiteSettingController::class, 'showGroup'])->name('group');
+        Route::get('/{setting}/edit', [\App\Http\Controllers\SiteSettingController::class, 'edit'])->name('edit');
+        Route::put('/{setting}', [\App\Http\Controllers\SiteSettingController::class, 'update'])->name('update');
+        Route::put('/', [\App\Http\Controllers\SiteSettingController::class, 'updateBulk'])->name('update.bulk');
+    });
 });

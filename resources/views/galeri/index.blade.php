@@ -10,9 +10,11 @@
             <h1 class="text-3xl font-bold text-gray-800">Manajemen Galeri</h1>
             <p class="text-gray-600 mt-1">Kelola foto dan gambar untuk galeri website</p>
         </div>
-        <a href="{{ route('galeri.create') }}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-            <i class="fas fa-plus mr-2"></i>Upload Foto
-        </a>
+        <div class="flex gap-2">
+            <a href="{{ route('galeri.create') }}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                <i class="fas fa-plus mr-2"></i>Upload Foto
+            </a>
+        </div>
     </div>
 
     <!-- Alert Messages -->
@@ -65,11 +67,31 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($galeri as $galeriItem)
             <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="aspect-video bg-gray-200 flex items-center justify-center">
-                    @if($galeriItem->fotos && $galeriItem->fotos->first())
-                        <img src="{{ asset('uploads/galeri/' . $galeriItem->fotos->first()->file) }}" 
-                             alt="{{ $galeriItem->post->judul ?? 'Foto' }}"
-                             class="w-full h-full object-cover">
+                <div class="aspect-video bg-gray-200 flex items-center justify-center relative">
+                    @if($galeriItem->fotos && $galeriItem->fotos->count() > 0)
+                        @if($galeriItem->fotos->count() == 1)
+                            <!-- Single photo -->
+                            <img src="{{ asset('uploads/galeri/' . $galeriItem->fotos->first()->file) }}" 
+                                 alt="{{ $galeriItem->post->judul ?? 'Foto' }}"
+                                 class="w-full h-full object-cover">
+                        @else
+                            <!-- Multiple photos grid -->
+                            <div class="grid grid-cols-2 grid-rows-2 w-full h-full gap-1">
+                                @foreach($galeriItem->fotos->take(4) as $index => $foto)
+                                    @if($index < 3)
+                                        <div class="relative">
+                                            <img src="{{ asset('uploads/galeri/' . $foto->file) }}" 
+                                                 alt="{{ $galeriItem->post->judul ?? 'Foto' }}"
+                                                 class="w-full h-full object-cover">
+                                        </div>
+                                    @elseif($index == 3)
+                                        <div class="relative bg-black bg-opacity-50 flex items-center justify-center">
+                                            <span class="text-white font-bold text-xl">+{{ $galeriItem->fotos->count() - 3 }}</span>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        @endif
                     @else
                         <i class="fas fa-image text-gray-400 text-4xl"></i>
                     @endif

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kategori;
+use App\Models\Foto;
 use Illuminate\Http\Request;
 
 class KategoriController extends Controller
@@ -10,7 +11,8 @@ class KategoriController extends Controller
     public function index()
     {
         $kategori = Kategori::all();
-        return view('kategori.index', compact('kategori'));
+        $totalFotos = Foto::count();
+        return view('kategori.index', compact('kategori', 'totalFotos'));
     }
 
     public function create()

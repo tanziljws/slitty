@@ -3,12 +3,17 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Foto;
+use App\Models\Petugas;
 
 class AdminProfileController extends Controller
 {
     public function index()
     {
-        return view('admin.profile');
+        $totalFotos = Foto::count();
+        $totalPetugas = Petugas::count();
+        
+        return view('admin.profile', compact('totalFotos', 'totalPetugas'));
     }
 
     public function update(Request $request)

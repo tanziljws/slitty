@@ -68,7 +68,7 @@
                     </div>
                     <div>
                         <p class="text-sm font-medium text-gray-600">Total Foto</p>
-                        <p class="text-2xl font-bold text-gray-900">245</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $totalFotos }}</p>
                     </div>
                 </div>
             </div>
@@ -80,7 +80,7 @@
                     </div>
                     <div>
                         <p class="text-sm font-medium text-gray-600">Total Petugas</p>
-                        <p class="text-2xl font-bold text-gray-900">12</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $totalPetugas }}</p>
                     </div>
                 </div>
             </div>

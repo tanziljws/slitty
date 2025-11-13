@@ -71,10 +71,10 @@
                 @if($galeri->fotos && $galeri->fotos->count() > 0)
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         @foreach($galeri->fotos as $foto)
-                            <div class="relative group">
+                            <div class="relative group aspect-square">
                                 <img src="{{ asset('uploads/galeri/' . $foto->file) }}" 
                                      alt="Foto galeri" 
-                                     class="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                     class="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                                      onclick="openImageModal('{{ asset('uploads/galeri/' . $foto->file) }}', '{{ $galeri->post->judul ?? 'Foto' }}')">
                                 
                                 <!-- Overlay Actions -->

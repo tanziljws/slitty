@@ -23,8 +23,8 @@
             line-height: 1.6;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
             padding: 20px;
         }
         
@@ -263,14 +263,13 @@
         
         /* Footer */
         .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            position: static;
             text-align: center;
             padding: 15px;
-            background: rgba(59, 130, 246, 0.05);
+            background: transparent;
             border-top: 1px solid rgba(59, 130, 246, 0.1);
+            margin-top: auto;
+            width: 100%;
         }
         
         .footer p {
@@ -302,6 +301,42 @@
                 width: 80px;
                 height: 80px;
                 font-size: 2.5rem;
+            }
+        }
+        @media (max-width: 640px) {
+            .login-wrapper {
+                max-width: 100%;
+                min-height: auto;
+                border-radius: 20px;
+            }
+            .login-left,
+            .login-right {
+                padding: 24px 20px;
+            }
+            .left-content h1 {
+                font-size: 1.75rem;
+            }
+            .left-content p {
+                font-size: 0.95rem;
+            }
+            .logo-icon {
+                width: 64px;
+                height: 64px;
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .learn-more-btn {
+                width: 100%;
+            }
+            .login-title {
+                font-size: 1.6rem;
+            }
+            .btn-login {
+                padding: 14px 22px;
+                font-size: 15px;
+                border-radius: 10px;
             }
         }
     </style>
@@ -338,12 +373,12 @@
                 
                 <!-- Email Field -->
                 <div class="form-group">
-                    <input type="email" 
+                    <input type="text" 
                            name="email" 
                            value="{{ old('email') }}"
                            class="form-input"
-                           placeholder="Enter Username..."
-                           required>
+                           placeholder="Email atau Username..."
+                           required autocomplete="username">
                     @error('email')
                         <p class="input-error">{{ $message }}</p>
                     @enderror

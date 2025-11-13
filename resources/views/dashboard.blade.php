@@ -50,7 +50,7 @@
                 <p class="text-3xl font-bold text-gray-900">{{ $totalGaleri }}</p>
                 <div class="flex items-center mt-2">
                     <span class="text-green-500 text-sm font-medium">+12%</span>
-                    <span class="text-gray-500 text-sm ml-1">dari bulan lalu</span>
+                    <span class="text-gray-490 text-sm ml-1">dari bulan lalu</span>
                 </div>
             </div>
             <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -67,7 +67,7 @@
                 <p class="text-3xl font-bold text-gray-900">{{ $galeriAktif }}</p>
                 <div class="flex items-center mt-2">
                     <span class="text-green-500 text-sm font-medium">+5%</span>
-                    <span class="text-gray-500 text-sm ml-1">dari minggu lalu</span>
+                    <span class="text-gray-490 text-sm ml-1">dari minggu lalu</span>
                 </div>
             </div>
             <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -84,7 +84,7 @@
                 <p class="text-3xl font-bold text-gray-900">{{ $totalKategori }}</p>
                 <div class="flex items-center mt-2">
                     <span class="text-green-500 text-sm font-medium">Aktif</span>
-                    <span class="text-gray-500 text-sm ml-1">semua kategori</span>
+                    <span class="text-gray-490 text-sm ml-1">semua kategori</span>
                 </div>
             </div>
             <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -101,7 +101,7 @@
                 <p class="text-3xl font-bold text-gray-900">{{ $totalPages }}</p>
                 <div class="flex items-center mt-2">
                     <span class="text-green-500 text-sm font-medium">+3%</span>
-                    <span class="text-gray-500 text-sm ml-1">dari bulan lalu</span>
+                    <span class="text-gray-490 text-sm ml-1">dari bulan lalu</span>
                 </div>
             </div>
             <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -113,56 +113,8 @@
 
 <!-- Content Panels -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Galeri Foto -->
-    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-images text-blue-600 text-xl"></i>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900">Galeri Foto</h3>
-            </div>
-            <a href="{{ route('galeri.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
-                <i class="fas fa-plus"></i>
-                <span>Tambah Foto</span>
-            </a>
-        </div>
-        
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            @forelse($recentGaleri->take(3) as $galeri)
-                <div class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors duration-200 cursor-pointer overflow-hidden">
-                    @if($galeri->fotos && $galeri->fotos->count() > 0)
-                        <img src="{{ asset('uploads/galeri/' . $galeri->fotos->first()->file) }}" 
-                             alt="{{ $galeri->post->judul ?? 'Foto' }}" 
-                             class="w-full h-full object-cover rounded-lg">
-                    @else
-                        <i class="fas fa-image text-gray-400 text-2xl"></i>
-                    @endif
-                </div>
-            @empty
-                <div class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors duration-200 cursor-pointer">
-                    <i class="fas fa-image text-gray-400 text-2xl"></i>
-                </div>
-                <div class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors duration-200 cursor-pointer">
-                    <i class="fas fa-image text-gray-400 text-2xl"></i>
-                </div>
-                <div class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors duration-200 cursor-pointer">
-                    <i class="fas fa-image text-gray-400 text-2xl"></i>
-                </div>
-            @endforelse
-            
-            <a href="{{ route('galeri.create') }}" class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors duration-200 cursor-pointer border-2 border-dashed border-gray-300">
-                <i class="fas fa-plus text-gray-400 text-xl"></i>
-            </a>
-        </div>
-        
-        <div class="mt-4 text-center">
-            <p class="text-sm text-gray-500">{{ $recentGaleri->count() }} foto terbaru ditampilkan</p>
-        </div>
-    </div>
-
     <!-- Informasi -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div class="lg:col-span-3 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div class="flex items-center space-x-3 mb-6">
             <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <i class="fas fa-bell text-blue-600 text-xl"></i>
@@ -210,31 +162,32 @@
     </div>
     
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        @forelse($recentAgenda as $agenda)
         <div class="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
             <div class="flex items-start space-x-3">
                 <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-graduation-cap text-white text-lg"></i>
+                    <i class="fas fa-calendar-alt text-white text-lg"></i>
                 </div>
                 <div class="flex-1">
-                    <h4 class="font-semibold text-gray-900">Wisuda Angkatan 2025</h4>
-                    <p class="text-sm text-gray-600 mt-1">28 Agustus 2025</p>
-                    <span class="inline-block mt-2 px-3 py-1 bg-green-500 text-white text-xs rounded-full font-medium">Segera</span>
+                    <h4 class="font-semibold text-gray-900">{{ $agenda->title }}</h4>
+                    <p class="text-sm text-gray-600 mt-1">
+                        {{ $agenda->event_date ? $agenda->event_date->format('d F Y') : 'Tanggal tidak ditentukan' }}
+                        @if($agenda->time)
+                            pukul {{ $agenda->time }}
+                        @endif
+                    </p>
+                    <span class="inline-block mt-2 px-3 py-1 bg-green-500 text-white text-xs rounded-full font-medium">
+                        {{ $agenda->date_label ?? 'Aktif' }}
+                    </span>
                 </div>
             </div>
         </div>
-        
-        <div class="p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200">
-            <div class="flex items-start space-x-3">
-                <div class="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-trophy text-white text-lg"></i>
-                </div>
-                <div class="flex-1">
-                    <h4 class="font-semibold text-gray-900">Kompetisi Sains</h4>
-                    <p class="text-sm text-gray-600 mt-1">1 September 2025</p>
-                    <span class="inline-block mt-2 px-3 py-1 bg-gray-500 text-white text-xs rounded-full font-medium">Mendatang</span>
-                </div>
-            </div>
+        @empty
+        <div class="col-span-2 text-center py-8 text-gray-500">
+            <i class="fas fa-calendar-times text-4xl mb-2"></i>
+            <p>Belum ada agenda yang ditambahkan</p>
         </div>
+        @endforelse
     </div>
 </div>
 
@@ -263,7 +216,7 @@
             <span class="text-sm font-medium text-gray-700">Tambah Petugas</span>
         </a>
         
-        <a href="{{ route('galeri.index') }}" class="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-200 transition-colors duration-200 flex flex-col items-center space-y-2">
+        <a href="{{ route('galeri.report') }}" class="p-4 bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-200 transition-colors duration-200 flex flex-col items-center space-y-2">
             <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
                 <i class="fas fa-chart-line text-white text-xl"></i>
             </div>

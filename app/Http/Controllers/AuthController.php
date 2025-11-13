@@ -17,27 +17,36 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        // Validasi input dari form
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        // Validasi input dari form (email atau username)
+        $request->validate([
+            'email' => ['required', 'string'],
             'password' => ['required'],
         ]);
 
-        // Coba login dengan User model terlebih dahulu
-        if (Auth::attempt(['email' => $request->email, 'password' => $request->password], $request->filled('remember'))) {
-            $request->session()->regenerate();
-            return redirect()->intended('/dashboard');
+        $login = $request->input('email');
+        $remember = $request->filled('remember');
+
+        // Coba login sebagai User (web guard) hanya jika input berupa email
+        if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+            if (Auth::attempt(['email' => $login, 'password' => $request->password], $remember)) {
+                $request->session()->regenerate();
+                return redirect()->intended('/dashboard');
+            }
         }
 
-        // Jika login dengan User gagal, coba dengan Petugas model menggunakan email
-        if (Auth::guard('petugas')->attempt(['email' => $request->email, 'password' => $request->password], $request->filled('remember'))) {
+        // Coba login sebagai Petugas (boleh email atau username)
+        $petugasCredentials = filter_var($login, FILTER_VALIDATE_EMAIL)
+            ? ['email' => $login, 'password' => $request->password]
+            : ['username' => $login, 'password' => $request->password];
+
+        if (Auth::guard('petugas')->attempt($petugasCredentials, $remember)) {
             $request->session()->regenerate();
             return redirect()->intended('/dashboard');
         }
 
         // Jika login gagal, tampilkan error
         return back()->withErrors([
-            'email' => 'Email atau password yang Anda masukkan salah.',
+            'email' => 'Email/username atau password yang Anda masukkan salah.',
         ])->onlyInput('email');
     }
 

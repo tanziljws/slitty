@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Post;
 use App\Models\galery;
 use App\Models\Kategori;
+use App\Models\Foto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class GaleriController extends Controller
 {
@@ -40,20 +44,52 @@ class GaleriController extends Controller
             mkdir(public_path('uploads/galeri'), 0755, true);
         }
 
-        // 1. Buat post dulu
-        $post = \App\Models\posts::create([
-            'judul' => $request->judul,
-            'kategori_id' => $request->kategori_id,
-            'petugas_id' => 1, // Use default petugas ID 1 (always exists)
-            'isi' => $request->deskripsi ?? '',
-            'status' => 'published'
+        // 1. Buat post dulu dengan cara yang lebih aman
+        $post = new Post();
+        $post->judul = $request->judul;
+        $post->kategori_id = $request->kategori_id;
+        
+        // Tentukan petugas_id dengan benar
+        if (auth('petugas')->check()) {
+            // Jika login sebagai petugas
+            $post->petugas_id = auth('petugas')->user()->id;
+        } else if (Auth::check()) {
+            // Jika login sebagai user biasa
+            $post->petugas_id = Auth::user()->id;
+        } else {
+            // Jika tidak login sama sekali, gunakan ID default 1
+            // dan log error untuk debugging
+            Log::error('User not authenticated when creating post', [
+                'user_id' => Auth::check() ? Auth::user()->id : null,
+                'petugas_id' => auth('petugas')->check() ? auth('petugas')->user()->id : null,
+                'timestamp' => now()->format('Y-m-d H:i:s')
+            ]);
+            $post->petugas_id = 1;
+        }
+        
+        $post->isi = $request->deskripsi ?? '';
+        $post->status = 'published';
+        $post->save();
+
+        // Logging untuk memastikan post tersimpan
+        Log::info('Post created for gallery and saved permanently', [
+            'post_id' => $post->id,
+            'title' => $post->judul,
+            'created_at' => $post->created_at->format('Y-m-d H:i:s')
         ]);
 
         // 2. Buat galeri yang terkait dengan post
-        $galeri = galery::create([
-            'post_id' => $post->id,
-            'position' => null,
-            'status' => 'aktif'
+        $galeri = new Galery();
+        $galeri->post_id = $post->id;
+        $galeri->position = null;
+        $galeri->status = 'aktif';
+        $galeri->save();
+
+        // Logging untuk memastikan galeri tersimpan
+        Log::info('Gallery created and saved permanently', [
+            'gallery_id' => $galeri->id,
+            'post_id' => $galeri->post_id,
+            'created_at' => now()->format('Y-m-d H:i:s')
         ]);
 
         // 3. Upload dan simpan multiple files
@@ -63,10 +99,18 @@ class GaleriController extends Controller
                 $namaFoto = time() . '_' . $index . '.' . $foto->getClientOriginalExtension();
                 $foto->move(public_path('uploads/galeri'), $namaFoto);
                 
-                // Simpan ke tabel foto
-                \App\Models\foto::create([
-                    'galery_id' => $galeri->id,
-                    'file' => $namaFoto
+                // Simpan ke tabel foto dengan cara yang lebih aman
+                $fotoRecord = new Foto();
+                $fotoRecord->galery_id = $galeri->id;
+                $fotoRecord->file = $namaFoto;
+                $fotoRecord->save();
+                
+                // Logging untuk memastikan foto tersimpan
+                Log::info('Photo uploaded for gallery and saved permanently', [
+                    'photo_id' => $fotoRecord->id,
+                    'gallery_id' => $galeri->id,
+                    'filename' => $namaFoto,
+                    'uploaded_at' => now()->format('Y-m-d H:i:s')
                 ]);
                 
                 $uploadedFiles[] = $namaFoto;
@@ -78,11 +122,11 @@ class GaleriController extends Controller
                 'success' => true, 
                 'data' => $galeri,
                 'uploaded_files' => $uploadedFiles,
-                'message' => count($uploadedFiles) . ' foto berhasil diupload!'
+                'message' => count($uploadedFiles) . ' foto berhasil diupload dan akan tersimpan permanen!'
             ]);
         }
 
-        return redirect()->route('galeri.index')->with('success', count($uploadedFiles) . ' foto berhasil ditambahkan ke galeri!');
+        return redirect()->route('galeri.index')->with('success', count($uploadedFiles) . ' foto berhasil ditambahkan ke galeri dan akan tersimpan permanen!');
     }
 
     public function show(galery $galeri)
@@ -157,17 +201,54 @@ class GaleriController extends Controller
 
     public function destroy(galery $galeri)
     {
-        if ($galeri->foto && file_exists(public_path('uploads/galeri/' . $galeri->foto))) {
-            unlink(public_path('uploads/galeri/' . $galeri->foto));
+        // Logging sebelum menghapus
+        Log::info('Gallery deletion started', [
+            'gallery_id' => $galeri->id,
+            'post_id' => $galeri->post_id,
+            'started_at' => now()->format('Y-m-d H:i:s')
+        ]);
+
+        // Perbaiki penghapusan foto
+        foreach ($galeri->fotos as $foto) {
+            $filePath = public_path('uploads/galeri/' . $foto->file);
+            if (file_exists($filePath)) {
+                unlink($filePath);
+                
+                // Logging penghapusan file
+                Log::info('Photo file deleted', [
+                    'photo_id' => $foto->id,
+                    'filename' => $foto->file,
+                    'deleted_at' => now()->format('Y-m-d H:i:s')
+                ]);
+            }
+            $foto->delete();
         }
 
+        // Hapus galeri
         $galeri->delete();
+
+        // Hapus post terkait
+        if ($galeri->post) {
+            $galeri->post->delete();
+            
+            // Logging penghapusan post
+            Log::info('Post deleted for gallery', [
+                'post_id' => $galeri->post->id,
+                'deleted_at' => now()->format('Y-m-d H:i:s')
+            ]);
+        }
+
+        // Logging selesai menghapus
+        Log::info('Gallery deletion completed', [
+            'gallery_id' => $galeri->id,
+            'completed_at' => now()->format('Y-m-d H:i:s')
+        ]);
 
         if (request()->ajax()) {
             return response()->json(['success' => true]);
         }
 
-        return redirect()->route('galeri.index')->with('success', 'Foto berhasil dihapus!');
+        return redirect()->route('galeri.index')->with('success', 'Galeri berhasil dihapus!');
     }
 
     // Tambahan: toggle status (aktif/nonaktif atau verified/pending)

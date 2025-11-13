@@ -22,6 +22,22 @@
         .content-transition {
             transition: margin-left 0.3s ease-in-out;
         }
+        .sidebar-scrollable {
+            height: calc(100vh - 120px); /* Tinggi viewport dikurangi tinggi header dan footer */
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #3b82f6 #1e40af;
+        }
+        .sidebar-scrollable::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar-scrollable::-webkit-scrollbar-track {
+            background: #1e40af;
+        }
+        .sidebar-scrollable::-webkit-scrollbar-thumb {
+            background-color: #3b82f6;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -44,7 +60,7 @@
             </div>
 
             <!-- Navigation Menu -->
-            <nav class="mt-6 px-4">
+            <nav class="mt-6 px-4 sidebar-scrollable">
                 <div class="space-y-2">
                     <a href="{{ route('dashboard') }}" 
                        class="flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 {{ request()->routeIs('dashboard') ? 'bg-blue-700 text-white' : 'text-blue-100 hover:bg-blue-700 hover:text-white' }}">
@@ -65,15 +81,21 @@
                     </a>
 
                     <a href="{{ route('galeri.index') }}" 
-                       class="flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 {{ request()->routeIs('galeri.*') ? 'bg-blue-700 text-white' : 'text-blue-100 hover:bg-blue-700 hover:text-white' }}">
+                       class="flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 {{ request()->routeIs('galeri.index') || request()->routeIs('galeri.create') || request()->routeIs('galeri.edit') || request()->routeIs('galeri.show') ? 'bg-blue-700 text-white' : 'text-blue-100 hover:bg-blue-700 hover:text-white' }}">
                         <i class="fas fa-images w-5"></i>
                         <span>Galeri</span>
                     </a>
 
-                    <a href="{{ route('pages.index') }}" 
-                       class="flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 {{ request()->routeIs('pages.*') ? 'bg-blue-700 text-white' : 'text-blue-100 hover:bg-blue-700 hover:text-white' }}">
-                        <i class="fas fa-file-alt w-5"></i>
-                        <span>Halaman</span>
+                    <a href="{{ route('galeri.report') }}" 
+                       class="flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 {{ request()->routeIs('galeri.report') || request()->routeIs('galeri.report.pdf') ? 'bg-blue-700 text-white' : 'text-blue-100 hover:bg-blue-700 hover:text-white' }}">
+                        <i class="fas fa-chart-bar w-5"></i>
+                        <span>Laporan Statistik</span>
+                    </a>
+
+                    <a href="{{ route('site-settings.index') }}" 
+                       class="flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors duration-200 {{ request()->routeIs('site-settings.*') ? 'bg-blue-700 text-white' : 'text-blue-100 hover:bg-blue-700 hover:text-white' }}">
+                        <i class="fas fa-cog w-5"></i>
+                        <span>Pengaturan Situs</span>
                     </a>
 
                     <a href="{{ route('admin.profile') }}" 
@@ -85,7 +107,7 @@
             </nav>
 
             <!-- User Info -->
-            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-700">
+            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-700 bg-blue-800">
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
                         <i class="fas fa-user text-white"></i>
@@ -117,21 +139,6 @@
                             <i class="fas fa-bars text-xl"></i>
                         </button>
                         <h2 class="text-2xl font-bold text-gray-900">@yield('title', 'Dashboard')</h2>
-                    </div>
-                    
-                    <!-- Notifications -->
-                    <div class="flex items-center space-x-4">
-                        <div class="relative">
-                            <button class="relative p-2 text-gray-600 hover:text-gray-900 transition-colors duration-200">
-                                <i class="fas fa-bell text-xl"></i>
-                                <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full"></span>
-                            </button>
-                        </div>
-                        <div class="w-px h-8 bg-gray-300"></div>
-                        <div class="flex items-center space-x-3">
-                            <img class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center" src="#" alt="Profile">
-                            <span class="hidden md:block text-sm font-medium text-gray-700">{{ auth()->user()->name ?? 'User' }}</span>
-                        </div>
                     </div>
                 </div>
             </div>

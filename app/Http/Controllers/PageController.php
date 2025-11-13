@@ -4,168 +4,64 @@ namespace App\Http\Controllers;
 
 use App\Models\Page;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class PageController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $pages = Page::ordered()->get();
-        return view('pages.index', compact('pages'));
+        $pages = Page::orderBy('created_at', 'desc')->get();
+        return response()->json($pages);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return view('pages.create');
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'excerpt' => 'nullable|string|max:500',
-            'slug' => 'nullable|string|max:255|unique:pages,slug',
-            'status' => 'required|in:published,draft',
-            'template' => 'required|string|max:100',
-            'sort_order' => 'nullable|integer|min:0',
-        ]);
-
-        // Generate slug jika tidak diisi
-        $slug = $request->slug ?: Str::slug($request->title);
-        
-        // Pastikan slug unique
-        $originalSlug = $slug;
-        $counter = 1;
-        while (Page::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
-            $counter++;
-        }
-
-        $page = Page::create([
-            'title' => $request->title,
-            'slug' => $slug,
-            'content' => $request->content,
-            'excerpt' => $request->excerpt,
-            'status' => $request->status,
-            'template' => $request->template,
-            'sort_order' => $request->sort_order ?? 0,
-            'meta_data' => [
-                'meta_title' => $request->meta_title ?? $request->title,
-                'meta_description' => $request->meta_description ?? $request->excerpt,
-                'meta_keywords' => $request->meta_keywords,
-            ]
-        ]);
-
-        return redirect()->route('pages.index')->with('success', 'Halaman berhasil dibuat!');
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(Page $page)
     {
-        // Untuk public view (frontend)
-        if (!$page->isPublished()) {
-            abort(404);
-        }
-        
-        return view('pages.show', compact('page'));
+        return response()->json($page);
     }
-    
-    /**
-     * Show page by slug (untuk frontend)
-     */
+
     public function showBySlug($slug)
     {
-        $page = Page::where('slug', $slug)->published()->firstOrFail();
-        return view('pages.show', compact('page'));
+        $page = Page::where('slug', $slug)->firstOrFail();
+        return view('user.page', compact('page'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Page $page)
+    public function store(Request $request)
     {
-        return view('pages.edit', compact('page'));
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:pages',
+            'content' => 'required|string',
+            'status' => 'required|in:published,draft',
+            'published_at' => 'nullable|date'
+        ]);
+
+        $page = Page::create($validated);
+        return response()->json($page, 201);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Page $page)
     {
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:pages,slug,' . $page->id,
             'content' => 'required|string',
-            'excerpt' => 'nullable|string|max:500',
-            'slug' => 'nullable|string|max:255|unique:pages,slug,' . $page->id,
             'status' => 'required|in:published,draft',
-            'template' => 'required|string|max:100',
-            'sort_order' => 'nullable|integer|min:0',
+            'published_at' => 'nullable|date'
         ]);
 
-        // Generate slug jika tidak diisi
-        $slug = $request->slug ?: Str::slug($request->title);
-        
-        // Pastikan slug unique (kecuali untuk page ini sendiri)
-        if ($slug !== $page->slug) {
-            $originalSlug = $slug;
-            $counter = 1;
-            while (Page::where('slug', $slug)->where('id', '!=', $page->id)->exists()) {
-                $slug = $originalSlug . '-' . $counter;
-                $counter++;
-            }
-        }
-
-        $page->update([
-            'title' => $request->title,
-            'slug' => $slug,
-            'content' => $request->content,
-            'excerpt' => $request->excerpt,
-            'status' => $request->status,
-            'template' => $request->template,
-            'sort_order' => $request->sort_order ?? 0,
-            'meta_data' => [
-                'meta_title' => $request->meta_title ?? $request->title,
-                'meta_description' => $request->meta_description ?? $request->excerpt,
-                'meta_keywords' => $request->meta_keywords,
-            ]
-        ]);
-
-        return redirect()->route('pages.index')->with('success', 'Halaman berhasil diupdate!');
+        $page->update($validated);
+        return response()->json($page);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Page $page)
     {
         $page->delete();
-        return redirect()->route('pages.index')->with('success', 'Halaman berhasil dihapus!');
+        return response()->json(['message' => 'Page deleted successfully']);
     }
-    
-    /**
-     * Toggle status (published/draft)
-     */
+
     public function toggleStatus(Page $page)
     {
         $page->status = $page->status === 'published' ? 'draft' : 'published';
         $page->save();
-        
-        return response()->json([
-            'success' => true,
-            'status' => $page->status,
-            'message' => 'Status berhasil diubah ke ' . $page->status
-        ]);
+        return response()->json($page);
     }
 }
