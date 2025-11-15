@@ -862,6 +862,12 @@ Route::middleware(['guest'])->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
 });
 
+// Logout routes - support both GET and POST for better compatibility
+Route::get('/logout', function() {
+    // Auto-submit logout form via JavaScript for GET requests
+    return view('auth.logout-redirect');
+})->name('logout.get');
+
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // -------------------------------
