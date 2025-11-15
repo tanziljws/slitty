@@ -48,43 +48,64 @@ Route::get('/test-db', function () {
 });
 
 Route::get('/', function () {
-    // Get latest 5 galleries
-    $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
-        ->where('status', 'aktif')
-        ->orderBy(
-            \App\Models\Post::select('created_at')
-                ->whereColumn('posts.id', 'galery.post_id')
-        , 'desc')
-        ->limit(5)
-        ->get();
-    
-    // Get latest 4 agendas
-    $latestAgendas = \App\Models\Agenda::where('status', 'aktif')
-        ->orderBy('order')
-        ->limit(4)
-        ->get();
-    
-    return view('user.dashboard', compact('latestGalleries', 'latestAgendas'));
+    try {
+        // Get latest 5 galleries
+        $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
+            ->where('status', 'aktif')
+            ->orderBy(
+                \App\Models\Post::select('created_at')
+                    ->whereColumn('posts.id', 'galery.post_id')
+            , 'desc')
+            ->limit(5)
+            ->get();
+        
+        // Get latest 4 agendas
+        $latestAgendas = \App\Models\Agenda::where('status', 'aktif')
+            ->orderBy('order')
+            ->limit(4)
+            ->get();
+        
+        return view('user.dashboard', compact('latestGalleries', 'latestAgendas'));
+    } catch (\Exception $e) {
+        // Jika database error, tampilkan halaman error atau fallback
+        \Log::error('Error loading homepage: ' . $e->getMessage());
+        return response()->view('errors.database', ['message' => $e->getMessage()], 500);
+    }
 })->name('user.dashboard');
 
 Route::get('/user/gallery', function () {
-    $galeri = \App\Models\galery::with(['post.kategori', 'fotos'])->where('status', 'aktif')->get();
-    $kategoris = \App\Models\Kategori::orderBy('judul', 'asc')->get();
-    return view('user.gallery', compact('galeri', 'kategoris'));
+    try {
+        $galeri = \App\Models\galery::with(['post.kategori', 'fotos'])->where('status', 'aktif')->get();
+        $kategoris = \App\Models\Kategori::orderBy('judul', 'asc')->get();
+        return view('user.gallery', compact('galeri', 'kategoris'));
+    } catch (\Exception $e) {
+        \Log::error('Error loading gallery: ' . $e->getMessage());
+        return response()->view('errors.database', ['message' => $e->getMessage()], 500);
+    }
 })->name('user.gallery');
 
 Route::get('/user/agenda', function () {
-    $agendaItems = \App\Models\Agenda::where('status', 'aktif')->orderBy('order')->get();
-    return view('user.agenda', compact('agendaItems'));
+    try {
+        $agendaItems = \App\Models\Agenda::where('status', 'aktif')->orderBy('order')->get();
+        return view('user.agenda', compact('agendaItems'));
+    } catch (\Exception $e) {
+        \Log::error('Error loading agenda: ' . $e->getMessage());
+        return response()->view('errors.database', ['message' => $e->getMessage()], 500);
+    }
 })->name('user.agenda');
 
 Route::get('/user/informasi', function () {
-    $informasiItems = \App\Models\Informasi::where('status', 'aktif')
-        ->orderByDesc('date') // paling baru dulu
-        ->orderBy('order')    // kalau tanggal sama, pakai urutan
-        ->limit(6)            // hanya tampilkan 6 informasi terbaru
-        ->get();
-    return view('user.informasi', compact('informasiItems'));
+    try {
+        $informasiItems = \App\Models\Informasi::where('status', 'aktif')
+            ->orderByDesc('date') // paling baru dulu
+            ->orderBy('order')    // kalau tanggal sama, pakai urutan
+            ->limit(6)            // hanya tampilkan 6 informasi terbaru
+            ->get();
+        return view('user.informasi', compact('informasiItems'));
+    } catch (\Exception $e) {
+        \Log::error('Error loading informasi: ' . $e->getMessage());
+        return response()->view('errors.database', ['message' => $e->getMessage()], 500);
+    }
 })->name('user.informasi');
 
 // Public route untuk menampilkan pages
