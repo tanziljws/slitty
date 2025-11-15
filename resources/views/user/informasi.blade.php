@@ -226,7 +226,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('../../images/DJI_0148.jpg');
+            background-image: url('../../images/DJI_0148.JPG');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;

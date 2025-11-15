@@ -129,7 +129,7 @@
             color: #ffffff;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
-            background-image: linear-gradient(135deg, rgba(37, 99, 235, 0.65), rgba(30, 64, 175, 0.65)), url('../../images/DJI_0148.jpg');
+            background-image: linear-gradient(135deg, rgba(37, 99, 235, 0.65), rgba(30, 64, 175, 0.65)), url('../../images/DJI_0148.JPG');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
