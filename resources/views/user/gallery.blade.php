@@ -1115,8 +1115,13 @@
                     Untuk mengunduh foto, silakan jawab pertanyaan berikut:
                 </p>
                 <div class="captcha-box">
-                    <div class="captcha-question" id="captchaQuestion">Loading...</div>
-                    <input type="number" id="captchaAnswer" class="form-input" placeholder="Masukkan jawaban" style="text-align: center; font-size: 18px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                        <div class="captcha-question" id="captchaQuestion" style="flex: 1;">Loading...</div>
+                        <button type="button" onclick="refreshCaptcha()" style="padding: 8px 12px; background: #e5e7eb; border: none; border-radius: 8px; cursor: pointer; color: #64748b;" title="Refresh captcha">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <input type="number" id="captchaAnswer" class="form-input" placeholder="Masukkan jawaban" style="text-align: center; font-size: 18px; margin-top: 10px;">
                 </div>
                 <div id="captchaError" style="color: #ef4444; margin-top: 10px; display: none; padding: 12px; background: #fee2e2; border-radius: 8px; border-left: 4px solid #ef4444; font-weight: 500;"></div>
             </div>
@@ -1279,90 +1284,9 @@
         async function openDownloadModal(filePath, fileName) {
             currentFilePath = filePath;
             document.getElementById('downloadModal').style.display = 'block';
-            document.getElementById('captchaAnswer').value = '';
-            document.getElementById('captchaError').style.display = 'none';
-            document.getElementById('captchaQuestion').textContent = 'Loading...';
             
-            // Generate captcha
-            try {
-                // Get CSRF token
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                if (!csrfToken) {
-                    throw new Error('CSRF token tidak ditemukan. Silakan refresh halaman.');
-                }
-                
-                const response = await fetch("{{ route('download.captcha') }}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    credentials: 'same-origin'
-                });
-                
-                // Check if response is ok
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    let errorMessage = 'Gagal memuat captcha';
-                    
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorMessage;
-                    } catch (e) {
-                        // If not JSON, use status text
-                        if (response.status === 419) {
-                            errorMessage = 'Session expired. Silakan refresh halaman.';
-                        } else if (response.status === 500) {
-                            errorMessage = 'Server error. Silakan coba lagi.';
-                        }
-                    }
-                    
-                    throw new Error(errorMessage);
-                }
-                
-                const data = await response.json();
-                
-                if (data.question && data.session_id) {
-                    document.getElementById('captchaQuestion').textContent = data.question;
-                    currentCaptchaSession = data.session_id;
-                } else {
-                    throw new Error('Format response captcha tidak valid');
-                }
-            } catch (error) {
-                console.error('Error generating captcha:', error);
-                const errorMessage = error.message || 'Error loading captcha';
-                document.getElementById('captchaQuestion').textContent = errorMessage;
-                document.getElementById('captchaError').textContent = errorMessage + '. Silakan tutup dan buka kembali modal download.';
-                document.getElementById('captchaError').style.display = 'block';
-                
-                // Retry after 2 seconds
-                setTimeout(async () => {
-                    try {
-                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                        const response = await fetch("{{ route('download.captcha') }}", {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken || ''
-                            },
-                            credentials: 'same-origin'
-                        });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.question && data.session_id) {
-                                document.getElementById('captchaQuestion').textContent = data.question;
-                                currentCaptchaSession = data.session_id;
-                                document.getElementById('captchaError').style.display = 'none';
-                            }
-                        }
-                    } catch (retryError) {
-                        console.error('Retry failed:', retryError);
-                    }
-                }, 2000);
-            }
+            // Load captcha
+            await loadCaptcha();
         }
         
         async function verifyAndDownload() {
@@ -1408,7 +1332,7 @@
                     captchaBox.classList.add('error-shake');
                     setTimeout(() => captchaBox.classList.remove('error-shake'), 400);
                     // Refresh captcha
-                    openDownloadModal(currentFilePath, '');
+                    await loadCaptcha();
                 }
             } catch (error) {
                 console.error('Error verifying captcha:', error);
