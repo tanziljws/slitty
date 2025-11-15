@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GaleriController;
@@ -23,6 +24,83 @@ if (config('app.debug')) {
 // -------------------------------
 // PUBLIC ROUTES (Tanpa Login)
 // -------------------------------
+// Debug route untuk test homepage query
+Route::get('/test-homepage', function () {
+    $results = [];
+    
+    try {
+        // Test 1: Check tables
+        $results['tables'] = [
+            'galery' => Schema::hasTable('galery'),
+            'posts' => Schema::hasTable('posts'),
+            'agenda' => Schema::hasTable('agenda'),
+        ];
+        
+        // Test 2: Query galleries
+        try {
+            $latestGaleriIds = \App\Models\galery::join('posts', 'galery.post_id', '=', 'posts.id')
+                ->where('galery.status', 'aktif')
+                ->orderBy('posts.created_at', 'desc')
+                ->select('galery.id')
+                ->limit(5)
+                ->pluck('id');
+            
+            $results['gallery_ids'] = $latestGaleriIds->toArray();
+            
+            if ($latestGaleriIds->isNotEmpty()) {
+                $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
+                    ->whereIn('id', $latestGaleriIds)
+                    ->get();
+                
+                $results['galleries'] = [
+                    'count' => $latestGalleries->count(),
+                    'data' => $latestGalleries->map(function($g) {
+                        return [
+                            'id' => $g->id,
+                            'has_post' => $g->post !== null,
+                            'post_title' => $g->post->judul ?? null,
+                            'fotos_count' => $g->fotos ? $g->fotos->count() : 0,
+                        ];
+                    })->toArray(),
+                ];
+            } else {
+                $results['galleries'] = 'No galleries found';
+            }
+        } catch (\Exception $e) {
+            $results['galleries_error'] = $e->getMessage();
+        }
+        
+        // Test 3: Query agendas
+        try {
+            $latestAgendas = \App\Models\Agenda::where('status', 'aktif')
+                ->orderBy('order')
+                ->limit(4)
+                ->get();
+            $results['agendas'] = [
+                'count' => $latestAgendas->count(),
+                'data' => $latestAgendas->toArray(),
+            ];
+        } catch (\Exception $e) {
+            $results['agendas_error'] = $e->getMessage();
+        }
+        
+        // Test 4: Try to render view
+        try {
+            $latestGalleries = collect([]);
+            $latestAgendas = collect([]);
+            $view = view('user.dashboard', compact('latestGalleries', 'latestAgendas'));
+            $results['view'] = 'OK - View can be rendered';
+        } catch (\Exception $e) {
+            $results['view_error'] = $e->getMessage();
+        }
+        
+    } catch (\Exception $e) {
+        $results['general_error'] = $e->getMessage();
+    }
+    
+    return response()->json($results, 200, [], JSON_PRETTY_PRINT);
+});
+
 // Debug route untuk test database connection (hapus setelah fix)
 Route::get('/test-db', function () {
     try {
@@ -57,27 +135,35 @@ Route::get('/', function () {
         // Get latest 5 galleries - load relasi dengan benar
         $latestGalleries = collect([]);
         try {
-            // Ambil ID galeri terbaru dulu
-            $latestGaleriIds = \App\Models\galery::join('posts', 'galery.post_id', '=', 'posts.id')
-                ->where('galery.status', 'aktif')
-                ->orderBy('posts.created_at', 'desc')
-                ->select('galery.id')
-                ->limit(5)
-                ->pluck('id');
-            
-            // Load dengan relasi
-            if ($latestGaleriIds->isNotEmpty()) {
-                $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
-                    ->whereIn('id', $latestGaleriIds)
-                    ->get()
-                    ->sortByDesc(function($gallery) {
-                        return $gallery->post->created_at ?? now();
-                    })
-                    ->values();
+            // Cek apakah tabel ada
+            if (Schema::hasTable('galery') && Schema::hasTable('posts')) {
+                // Ambil ID galeri terbaru dulu
+                $latestGaleriIds = \App\Models\galery::join('posts', 'galery.post_id', '=', 'posts.id')
+                    ->where('galery.status', 'aktif')
+                    ->orderBy('posts.created_at', 'desc')
+                    ->select('galery.id')
+                    ->limit(5)
+                    ->pluck('id');
+                
+                // Load dengan relasi
+                if ($latestGaleriIds->isNotEmpty()) {
+                    $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
+                        ->whereIn('id', $latestGaleriIds)
+                        ->get()
+                        ->filter(function($gallery) {
+                            return $gallery->post !== null;
+                        })
+                        ->sortByDesc(function($gallery) {
+                            return $gallery->post->created_at ?? now();
+                        })
+                        ->values();
+                }
             }
         } catch (\Exception $e) {
             \Log::error('Error loading galleries: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
             // Jika error, gunakan empty collection
             $latestGalleries = collect([]);
@@ -86,19 +172,33 @@ Route::get('/', function () {
         // Get latest 4 agendas - dengan error handling
         $latestAgendas = collect([]);
         try {
-            $latestAgendas = \App\Models\Agenda::where('status', 'aktif')
-                ->orderBy('order')
-                ->limit(4)
-                ->get();
+            if (Schema::hasTable('agenda')) {
+                $latestAgendas = \App\Models\Agenda::where('status', 'aktif')
+                    ->orderBy('order')
+                    ->limit(4)
+                    ->get();
+            }
         } catch (\Exception $e) {
             \Log::error('Error loading agendas: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
             ]);
             // Jika error, gunakan empty collection
             $latestAgendas = collect([]);
         }
         
-        return view('user.dashboard', compact('latestGalleries', 'latestAgendas'));
+        // Render view dengan error handling
+        try {
+            return view('user.dashboard', compact('latestGalleries', 'latestAgendas'));
+        } catch (\Exception $e) {
+            \Log::error('Error rendering view: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            throw $e;
+        }
     } catch (\Exception $e) {
         // Jika database error, tampilkan halaman error atau fallback
         \Log::error('Error loading homepage: ' . $e->getMessage(), [
@@ -114,12 +214,18 @@ Route::get('/', function () {
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
+                'trace' => config('app.debug') ? $e->getTraceAsString() : null,
             ], 500);
         }
         
-        return response()->view('errors.database', [
-            'message' => config('app.debug') ? $e->getMessage() : 'Database connection error. Please check your configuration.'
-        ], 500);
+        // Coba render error view, jika gagal return plain text
+        try {
+            return response()->view('errors.database', [
+                'message' => config('app.debug') ? $e->getMessage() : 'Database connection error. Please check your configuration.'
+            ], 500);
+        } catch (\Exception $viewError) {
+            return response('Error: ' . $e->getMessage() . ' (View also failed: ' . $viewError->getMessage() . ')', 500);
+        }
     }
 })->name('user.dashboard');
 
