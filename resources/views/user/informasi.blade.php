@@ -351,6 +351,152 @@
             font-size: 0.85rem;
         }
 
+        .info-card-latest {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .info-card-latest:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Modal Styles */
+        .info-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        .info-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .info-modal-content {
+            background-color: #ffffff;
+            margin: 20px;
+            padding: 0;
+            border-radius: 12px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s;
+        }
+
+        .info-modal-header {
+            padding: 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            position: relative;
+        }
+
+        .info-modal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .info-modal-icon i {
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .info-modal-header-text {
+            flex: 1;
+        }
+
+        .info-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 8px 0;
+        }
+
+        .info-modal-date {
+            font-size: 0.9rem;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-modal-date i {
+            font-size: 0.85rem;
+        }
+
+        .info-modal-body {
+            padding: 24px;
+        }
+
+        .info-modal-description {
+            font-size: 1rem;
+            color: #374151;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .info-modal-close {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #f3f4f6;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .info-modal-close:hover {
+            background-color: #e5e7eb;
+            transform: rotate(90deg);
+        }
+
+        .info-modal-close i {
+            font-size: 1.2rem;
+            color: #6b7280;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @media (max-width: 768px) {
             .info-latest-header {
                 flex-direction: column;
@@ -359,6 +505,34 @@
 
             .info-card-latest {
                 padding: 16px 16px 18px;
+            }
+
+            .info-modal-content {
+                margin: 10px;
+                max-height: 95vh;
+            }
+
+            .info-modal-header {
+                padding: 20px;
+            }
+
+            .info-modal-title {
+                font-size: 1.25rem;
+            }
+
+            .info-modal-body {
+                padding: 20px;
+            }
+
+            .info-modal-close {
+                top: 20px;
+                right: 20px;
+                width: 28px;
+                height: 28px;
+            }
+
+            .info-modal-close i {
+                font-size: 1rem;
             }
         }
 
@@ -957,7 +1131,12 @@
                 @if(isset($informasiItems) && $informasiItems->count() > 0)
                 <div class="info-latest-grid">
                     @foreach($informasiItems as $info)
-                    <article class="info-card-latest">
+                    <article class="info-card-latest" 
+                        onclick="openInfoModal(this)"
+                        data-title="{{ $info->title }}"
+                        data-date="{{ $info->date ? $info->date->format('d M Y') : '' }}"
+                        data-description="{{ $info->description }}"
+                        data-icon="{{ !empty($info->icon) ? $info->icon : 'fas fa-bullhorn' }}">
                         <div class="info-card-header">
                             <div class="info-card-icon">
                                 @if(!empty($info->icon))
@@ -978,7 +1157,7 @@
 
                         <div class="info-card-footer">
                             <i class="fas fa-info-circle"></i>
-                            <span>Hubungi sekolah untuk informasi lebih lanjut</span>
+                            <span>Klik untuk melihat detail lengkap</span>
                         </div>
                     </article>
                     @endforeach
@@ -1366,5 +1545,81 @@
             </div>
         </div>
     </footer>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="info-modal">
+        <div class="info-modal-content">
+            <div class="info-modal-header">
+                <div class="info-modal-icon">
+                    <i id="modalIcon" class="fas fa-bullhorn"></i>
+                </div>
+                <div class="info-modal-header-text">
+                    <h2 class="info-modal-title" id="modalTitle">Judul Informasi</h2>
+                    <div class="info-modal-date" id="modalDate">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span id="modalDateText">11 Nov 2025</span>
+                    </div>
+                </div>
+                <button class="info-modal-close" onclick="closeInfoModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="info-modal-body">
+                <div class="info-modal-description" id="modalDescription">
+                    Deskripsi lengkap informasi akan ditampilkan di sini...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fungsi untuk membuka modal
+        function openInfoModal(element) {
+            const modal = document.getElementById('infoModal');
+            const title = element.getAttribute('data-title');
+            const date = element.getAttribute('data-date');
+            const description = element.getAttribute('data-description');
+            const icon = element.getAttribute('data-icon');
+            
+            // Update konten modal
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalDateText').textContent = date;
+            document.getElementById('modalDescription').textContent = description;
+            document.getElementById('modalIcon').className = icon;
+            
+            // Tampilkan atau sembunyikan tanggal
+            const dateElement = document.getElementById('modalDate');
+            if (date) {
+                dateElement.style.display = 'flex';
+            } else {
+                dateElement.style.display = 'none';
+            }
+            
+            // Tampilkan modal
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+        
+        // Fungsi untuk menutup modal
+        function closeInfoModal() {
+            const modal = document.getElementById('infoModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto'; // Enable scrolling
+        }
+        
+        // Tutup modal ketika klik di luar konten
+        document.getElementById('infoModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeInfoModal();
+            }
+        });
+        
+        // Tutup modal dengan tombol ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeInfoModal();
+            }
+        });
+    </script>
 </body>
 </html>
