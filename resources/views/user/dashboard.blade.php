@@ -1148,7 +1148,7 @@
                     <div class="gallery-scroll-wrapper">
                         @forelse($latestGalleries as $gallery)
                         <div class="gallery-card">
-                            @if($gallery->fotos->count() > 0)
+                            @if($gallery->fotos && $gallery->fotos->count() > 0)
                                 <img src="{{ asset('uploads/galeri/' . $gallery->fotos->first()->file) }}" alt="{{ $gallery->post->judul ?? 'Gallery Image' }}" class="gallery-image">
                                 <div class="gallery-overlay">
                                     <div class="gallery-info">

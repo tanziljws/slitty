@@ -54,16 +54,27 @@ Route::get('/test-db', function () {
 
 Route::get('/', function () {
     try {
-        // Get latest 5 galleries - menggunakan JOIN seperti di DashboardController
+        // Get latest 5 galleries - load relasi dengan benar
         $latestGalleries = collect([]);
         try {
-            $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
-                ->join('posts', 'galery.post_id', '=', 'posts.id')
+            // Ambil ID galeri terbaru dulu
+            $latestGaleriIds = \App\Models\galery::join('posts', 'galery.post_id', '=', 'posts.id')
                 ->where('galery.status', 'aktif')
                 ->orderBy('posts.created_at', 'desc')
-                ->select('galery.*')
+                ->select('galery.id')
                 ->limit(5)
-                ->get();
+                ->pluck('id');
+            
+            // Load dengan relasi
+            if ($latestGaleriIds->isNotEmpty()) {
+                $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
+                    ->whereIn('id', $latestGaleriIds)
+                    ->get()
+                    ->sortByDesc(function($gallery) {
+                        return $gallery->post->created_at ?? now();
+                    })
+                    ->values();
+            }
         } catch (\Exception $e) {
             \Log::error('Error loading galleries: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
