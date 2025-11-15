@@ -1287,61 +1287,118 @@
             document.getElementById('captchaError').style.display = 'none';
             document.getElementById('captchaQuestion').textContent = 'Loading...';
             
-            try {
-                // Get CSRF token
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                if (!csrfToken) {
-                    throw new Error('CSRF token tidak ditemukan. Silakan refresh halaman.');
-                }
-                
-                const response = await fetch("{{ route('download.captcha') }}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    credentials: 'same-origin'
-                });
-                
-                // Check if response is ok
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    let errorMessage = 'Gagal memuat captcha';
-                    
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        errorMessage = errorData.message || errorMessage;
-                    } catch (e) {
-                        // If not JSON, use status text
-                        if (response.status === 419) {
-                            errorMessage = 'Session expired. Silakan refresh halaman.';
-                        } else if (response.status === 500) {
-                            errorMessage = 'Server error. Silakan coba lagi.';
-                        }
-                    }
-                    
-                    throw new Error(errorMessage);
-                }
-                
-                const data = await response.json();
-                
-                if (data.question && data.session_id) {
-                    document.getElementById('captchaQuestion').textContent = data.question;
-                    currentCaptchaSession = data.session_id;
-                    document.getElementById('captchaError').style.display = 'none';
-                    return true;
-                } else {
-                    throw new Error('Format response captcha tidak valid');
-                }
-            } catch (error) {
-                console.error('Error loading captcha:', error);
-                const errorMessage = error.message || 'Error loading captcha';
-                document.getElementById('captchaQuestion').textContent = errorMessage;
-                document.getElementById('captchaError').textContent = errorMessage + '. Silakan coba lagi.';
+            // Get CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                const errorMsg = 'CSRF token tidak ditemukan. Silakan refresh halaman.';
+                document.getElementById('captchaQuestion').textContent = errorMsg;
+                document.getElementById('captchaError').textContent = errorMsg;
                 document.getElementById('captchaError').style.display = 'block';
                 return false;
             }
+            
+            // Get captcha URL - use route helper or fallback to absolute path
+            const captchaUrl = "{{ route('download.captcha') }}";
+            
+            // Retry mechanism dengan 3 attempts
+            let lastError = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                    
+                    const response = await fetch(captchaUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin',
+                        signal: controller.signal,
+                        cache: 'no-cache'
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    // Check if response is ok
+                    if (!response.ok) {
+                        let errorMessage = 'Gagal memuat captcha';
+                        
+                        try {
+                            const errorText = await response.text();
+                            try {
+                                const errorData = JSON.parse(errorText);
+                                errorMessage = errorData.message || errorMessage;
+                            } catch (e) {
+                                // If not JSON, use status text
+                                if (response.status === 419) {
+                                    errorMessage = 'Session expired. Silakan refresh halaman.';
+                                } else if (response.status === 500) {
+                                    errorMessage = 'Server error. Silakan coba lagi.';
+                                } else if (response.status === 404) {
+                                    errorMessage = 'Endpoint tidak ditemukan.';
+                                }
+                            }
+                        } catch (e) {
+                            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                        }
+                        
+                        throw new Error(errorMessage);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.question && data.session_id) {
+                        document.getElementById('captchaQuestion').textContent = data.question;
+                        currentCaptchaSession = data.session_id;
+                        document.getElementById('captchaError').style.display = 'none';
+                        return true;
+                    } else {
+                        throw new Error('Format response captcha tidak valid');
+                    }
+                } catch (error) {
+                    lastError = error;
+                    console.error(`Error loading captcha (attempt ${attempt}/3):`, error);
+                    
+                    // Jika bukan network error atau timeout, langsung throw
+                    if (error.name !== 'TypeError' && error.name !== 'AbortError' && attempt < 3) {
+                        break; // Break loop untuk error yang bukan network/timeout
+                    }
+                    
+                    // Jika attempt terakhir, tampilkan error
+                    if (attempt === 3) {
+                        let errorMessage = 'Gagal memuat captcha';
+                        
+                        if (error.name === 'AbortError') {
+                            errorMessage = 'Request timeout. Silakan coba lagi.';
+                        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                            errorMessage = 'Koneksi gagal. Periksa koneksi internet Anda.';
+                        } else if (error.message) {
+                            errorMessage = error.message;
+                        }
+                        
+                        document.getElementById('captchaQuestion').textContent = errorMessage;
+                        document.getElementById('captchaError').textContent = errorMessage + '. Silakan coba lagi atau klik tombol refresh.';
+                        document.getElementById('captchaError').style.display = 'block';
+                        return false;
+                    }
+                    
+                    // Wait sebelum retry (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                }
+            }
+            
+            // Fallback jika semua retry gagal
+            if (lastError) {
+                const errorMessage = lastError.message || 'Error loading captcha';
+                document.getElementById('captchaQuestion').textContent = errorMessage;
+                document.getElementById('captchaError').textContent = errorMessage + '. Silakan coba lagi.';
+                document.getElementById('captchaError').style.display = 'block';
+            }
+            
+            return false;
         }
         
         // Function to refresh captcha
@@ -1371,18 +1428,53 @@
             }
             
             try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (!csrfToken) {
+                    throw new Error('CSRF token tidak ditemukan. Silakan refresh halaman.');
+                }
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                
                 const response = await fetch("{{ route('download.verify') }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
+                    credentials: 'same-origin',
+                    signal: controller.signal,
+                    cache: 'no-cache',
                     body: JSON.stringify({
                         captcha_answer: answer,
                         captcha_session: currentCaptchaSession,
                         file_path: currentFilePath
                     })
                 });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    let errorMsg = 'Verifikasi gagal';
+                    try {
+                        const errorText = await response.text();
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            errorMsg = errorData.message || errorMsg;
+                        } catch (e) {
+                            if (response.status === 419) {
+                                errorMsg = 'Session expired. Silakan refresh halaman.';
+                            } else if (response.status === 500) {
+                                errorMsg = 'Server error. Silakan coba lagi.';
+                            }
+                        }
+                    } catch (e) {
+                        errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    throw new Error(errorMsg);
+                }
                 
                 const data = await response.json();
                 
@@ -1395,7 +1487,7 @@
                         window.location.href = `/download/${data.download_token}`;
                     }, 100);
                 } else {
-                    errorDiv.textContent = data.message;
+                    errorDiv.textContent = data.message || 'Verifikasi gagal';
                     errorDiv.style.display = 'block';
                     captchaBox.classList.add('error-shake');
                     setTimeout(() => captchaBox.classList.remove('error-shake'), 400);
@@ -1404,7 +1496,17 @@
                 }
             } catch (error) {
                 console.error('Error verifying captcha:', error);
-                errorDiv.textContent = 'Terjadi kesalahan. Silakan coba lagi.';
+                let errorMessage = 'Terjadi kesalahan. Silakan coba lagi.';
+                
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Request timeout. Silakan coba lagi.';
+                } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage = 'Koneksi gagal. Periksa koneksi internet Anda.';
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                
+                errorDiv.textContent = errorMessage;
                 errorDiv.style.display = 'block';
                 captchaBox.classList.add('error-shake');
                 setTimeout(() => captchaBox.classList.remove('error-shake'), 400);
