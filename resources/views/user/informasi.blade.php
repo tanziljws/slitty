@@ -1397,9 +1397,11 @@
                     <div class="map-container">
                         @php
                             // Default embed code yang valid untuk SMKN 4 Bogor
-                            // Koordinat: -6.597005365229759, 106.79727831532822
-                            $defaultEmbed = '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3963.358216505442!2d106.79727831532822!3d-6.597005365229759!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69c5d9c8b5b5b5%3A0x5b4b5b5b5b5b5b5b!2sSMKN%204%20Bogor!5e0!3m2!1sen!2sid!4v1678886405123!5m2!1sen!2sid" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
-                            $defaultUrl = 'https://www.google.com/maps/place/SMKN+4+Bogor/@-6.597005365229759,106.79727831532822,15z/data=!4m6!3m5!1s0x2e69c5d9c8b5b5b5:0x5b4b5b5b5b5b5b5b!8m2!3d-6.597005365229759!4d106.79727831532822!16s%2Fg%2F11c0zdvjwx?entry=ttu';
+                            // Koordinat: -6.640493620727303, 106.82476900185368
+                            $defaultLat = '-6.640493620727303';
+                            $defaultLng = '106.82476900185368';
+                            $defaultEmbed = '<iframe src="https://www.google.com/maps/embed?q=' . urlencode($defaultLat . ',' . $defaultLng) . '&z=15&output=embed" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+                            $defaultUrl = 'https://www.google.com/maps?q=' . urlencode($defaultLat . ',' . $defaultLng);
 
                             $mapEmbed = \App\Models\SiteSetting::get('contact_map_embed', '');
                             $mapUrl = $defaultUrl;
