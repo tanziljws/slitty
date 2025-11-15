@@ -1396,17 +1396,13 @@
                     
                     <div class="map-container">
                         @php
+                            // Default embed code yang valid untuk SMKN 4 Bogor
+                            // Koordinat: -6.597005365229759, 106.79727831532822
                             $defaultEmbed = '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3963.358216505442!2d106.79727831532822!3d-6.597005365229759!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69c5d9c8b5b5b5%3A0x5b4b5b5b5b5b5b5b!2sSMKN%204%20Bogor!5e0!3m2!1sen!2sid!4v1678886405123!5m2!1sen!2sid" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
-                            $defaultUrl = 'https://www.google.com/maps/place/SMKN+4+Bogor/';
+                            $defaultUrl = 'https://www.google.com/maps/place/SMKN+4+Bogor/@-6.597005365229759,106.79727831532822,15z/data=!4m6!3m5!1s0x2e69c5d9c8b5b5b5:0x5b4b5b5b5b5b5b5b!8m2!3d-6.597005365229759!4d106.79727831532822!16s%2Fg%2F11c0zdvjwx?entry=ttu';
 
-                            $mapEmbed = \App\Models\SiteSetting::get('contact_map_embed');
-                            $mapUrl = '#';
-
-                            // Jika kosong, langsung pakai default saja
-                            if (!$mapEmbed || trim($mapEmbed) === '') {
-                                $mapEmbed = $defaultEmbed;
-                                $mapUrl = $defaultUrl;
-                            }
+                            $mapEmbed = \App\Models\SiteSetting::get('contact_map_embed', '');
+                            $mapUrl = $defaultUrl;
 
                             // Function to parse coordinates from various formats
                             function parseCoordinates($text) {
@@ -1427,36 +1423,78 @@
                                 return null;
                             }
                             
-                            // Check if it's already an iframe
-                            if (strpos($mapEmbed, '<iframe') !== false) {
-                                // Extract URL from iframe for clickable link
-                                preg_match('/src="([^\"]+)"/', $mapEmbed, $matches);
-                                $iframeSrc = isset($matches[1]) ? $matches[1] : '';
+                            // Function to validate iframe src URL
+                            function isValidMapUrl($url) {
+                                if (empty($url)) return false;
+                                // Check if it's a valid Google Maps embed URL
+                                return (strpos($url, 'google.com/maps/embed') !== false || 
+                                        strpos($url, 'maps.googleapis.com') !== false ||
+                                        filter_var($url, FILTER_VALIDATE_URL));
+                            }
 
-                                // Jika iframe berisi maps.app.goo.gl (short link), gunakan default embed saja
-                                if ($iframeSrc && strpos($iframeSrc, 'maps.app.goo.gl') !== false) {
+                            // Jika kosong atau null, langsung pakai default
+                            if (empty($mapEmbed) || trim($mapEmbed) === '') {
+                                $mapEmbed = $defaultEmbed;
+                                $mapUrl = $defaultUrl;
+                            }
+                            // Check if it's already an iframe
+                            elseif (strpos($mapEmbed, '<iframe') !== false) {
+                                // Extract URL from iframe for clickable link
+                                preg_match('/src=["\']([^"\']+)["\']/', $mapEmbed, $matches);
+                                $iframeSrc = isset($matches[1]) ? html_entity_decode($matches[1], ENT_QUOTES) : '';
+
+                                // Validasi URL dari iframe
+                                if (empty($iframeSrc) || !isValidMapUrl($iframeSrc)) {
+                                    // URL tidak valid atau kosong, gunakan default
+                                    $mapEmbed = $defaultEmbed;
+                                    $mapUrl = $defaultUrl;
+                                } elseif (strpos($iframeSrc, 'maps.app.goo.gl') !== false) {
+                                    // Short link tidak valid untuk embed, gunakan default
                                     $mapEmbed = $defaultEmbed;
                                     $mapUrl = $defaultUrl;
                                 } else {
-                                    // Biarkan iframe apa adanya, dan gunakan src sebagai link
-                                    $mapUrl = $iframeSrc ?: $defaultUrl;
+                                    // URL valid, pastikan iframe lengkap dan valid
+                                    // Extract src jika belum ada, atau gunakan yang ada
+                                    if (strpos($mapEmbed, 'src=') === false || empty($iframeSrc)) {
+                                        $mapEmbed = $defaultEmbed;
+                                        $mapUrl = $defaultUrl;
+                                    } else {
+                                        // Jika iframe valid, gunakan URL dari src untuk link
+                                        $mapUrl = $iframeSrc;
+                                        // Pastikan iframe memiliki semua atribut yang diperlukan
+                                        if (strpos($mapEmbed, 'allowfullscreen') === false) {
+                                            $mapEmbed = str_replace('>', ' allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">', $mapEmbed);
+                                        }
+                                    }
                                 }
                             } 
-                            // Check if it's a Google Maps URL
+                            // Check if it's a Google Maps URL (bukan iframe)
                             elseif (filter_var($mapEmbed, FILTER_VALIDATE_URL)) {
-                                $mapUrl = $mapEmbed;
+                                $mapUrl = trim($mapEmbed);
                                 
-                                // Check if it's a Google Maps share link
+                                // Check if it's a Google Maps share link (short URL)
                                 if (strpos($mapEmbed, 'maps.app.goo.gl') !== false) {
-                                    // Convert short URL to embed URL
-                                    $mapEmbed = '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3963.358216505442!2d106.79727831532822!3d-6.597005365229759!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69c5d9c8b5b5b5%3A0x5b4b5b5b5b5b5b5b!2sSMKN%204%20Bogor!5e0!3m2!1sen!2sid!4v1678886405123!5m2!1sen!2sid" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
-                                } else if (strpos($mapEmbed, 'google.com/maps') !== false) {
-                                    // For regular Google Maps URLs, convert to embed
-                                    // Extract coordinates from URL if possible
-                                    $embedUrl = str_replace('/maps', '/maps/embed', $mapEmbed);
-                                    $mapEmbed = '<iframe src="' . $embedUrl . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+                                    // Short URL tidak bisa langsung di-embed, gunakan default
+                                    $mapEmbed = $defaultEmbed;
+                                    $mapUrl = $defaultUrl;
+                                } 
+                                // Check if it's a regular Google Maps URL
+                                elseif (strpos($mapEmbed, 'google.com/maps') !== false && strpos($mapEmbed, '/embed') === false) {
+                                    // Convert regular Google Maps URL to embed
+                                    // Hati-hati dengan URL yang sudah ada /embed
+                                    if (strpos($mapEmbed, '/maps/embed') === false) {
+                                        $embedUrl = str_replace('/maps', '/maps/embed', $mapEmbed);
+                                        // Hapus parameter yang tidak perlu dan tambahkan parameter embed
+                                        if (strpos($embedUrl, '?') !== false) {
+                                            $embedUrl = strtok($embedUrl, '?');
+                                        }
+                                        $mapEmbed = '<iframe src="' . htmlspecialchars($embedUrl, ENT_QUOTES) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+                                    } else {
+                                        // Sudah ada /embed, langsung wrap dengan iframe
+                                        $mapEmbed = '<iframe src="' . htmlspecialchars($mapEmbed, ENT_QUOTES) . '" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+                                    }
                                 } else {
-                                    // Untuk URL lain yang tidak dikenali, pakai embed default
+                                    // URL tidak dikenali atau tidak valid untuk embed, gunakan default
                                     $mapEmbed = $defaultEmbed;
                                     $mapUrl = $defaultUrl;
                                 }
@@ -1466,13 +1504,19 @@
                                 // It's coordinates, convert to Google Maps embed
                                 $lat = $coords['lat'];
                                 $lng = $coords['lng'];
-                                $mapEmbed = '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3963.358216505442!2d' . $lng . '!3d' . $lat . '!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z' . $lat . 'N%20' . $lng . 'E!5e0!3m2!1sen!2s!4v1678886405123!5m2!1sen!2s" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
-                                $mapUrl = 'https://www.google.com/maps?q=' . $lat . ',' . $lng;
+                                $mapEmbed = '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3963.358216505442!2d' . htmlspecialchars($lng, ENT_QUOTES) . '!3d' . htmlspecialchars($lat, ENT_QUOTES) . '!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2z' . htmlspecialchars($lat, ENT_QUOTES) . 'N%20' . htmlspecialchars($lng, ENT_QUOTES) . 'E!5e0!3m2!1sen!2s!4v1678886405123!5m2!1sen!2s" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+                                $mapUrl = 'https://www.google.com/maps?q=' . urlencode($lat) . ',' . urlencode($lng);
                             }
-                            // If it's neither, treat as plain text
+                            // If it's neither, treat as plain text - use default
                             else {
                                 // Jika bukan iframe, bukan URL valid, dan bukan koordinat,
                                 // fallback ke embed default agar peta tetap muncul
+                                $mapEmbed = $defaultEmbed;
+                                $mapUrl = $defaultUrl;
+                            }
+                            
+                            // Final validation: Pastikan mapEmbed tidak kosong dan memiliki src
+                            if (empty($mapEmbed) || (strpos($mapEmbed, '<iframe') !== false && strpos($mapEmbed, 'src=') === false)) {
                                 $mapEmbed = $defaultEmbed;
                                 $mapUrl = $defaultUrl;
                             }
