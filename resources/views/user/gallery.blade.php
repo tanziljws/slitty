@@ -1308,8 +1308,8 @@
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
                     
-                    // Try POST first, fallback to GET if POST fails with CSRF error
-                    const useGet = attempt > 1 || lastError?.status === 419;
+                    // Try POST first, fallback to GET if POST fails with CSRF error (419) or on retry
+                    const useGet = attempt > 1 || (lastError && lastError.status === 419);
                     const captchaUrl = useGet ? captchaUrlGet : captchaUrlPost;
                     const method = useGet ? 'GET' : 'POST';
                     
@@ -1357,7 +1357,9 @@
                             errorMessage = `HTTP ${response.status}: ${response.statusText}`;
                         }
                         
-                        throw new Error(errorMessage);
+                        const error = new Error(errorMessage);
+                        error.status = response.status;
+                        throw error;
                     }
                     
                     const data = await response.json();
