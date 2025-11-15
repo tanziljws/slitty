@@ -161,9 +161,52 @@ class ImportSqlData extends Command
                 // Use DB::unprepared for raw SQL with complex strings
                 // Disable foreign key checks temporarily
                 DB::statement("SET FOREIGN_KEY_CHECKS=0;");
-                DB::unprepared($statement);
+                
+                // Try to execute statement
+                try {
+                    DB::unprepared($statement);
+                    $imported++;
+                } catch (\Exception $insertError) {
+                    $errorMsg = $insertError->getMessage();
+                    
+                    // Check if it's a column not found error - try to fix it
+                    if (strpos($errorMsg, 'Column not found') !== false || strpos($errorMsg, 'Unknown column') !== false) {
+                        // Try to modify SQL to remove missing columns (recursive fix for multiple missing columns)
+                        $modifiedStatement = $this->fixMissingColumns($statement, $table, $errorMsg);
+                        if ($modifiedStatement && $modifiedStatement !== $statement) {
+                            try {
+                                DB::unprepared($modifiedStatement);
+                                $imported++;
+                                $this->info("\n✅ Table {$table}: Fixed and imported (removed missing columns)");
+                            } catch (\Exception $retryError) {
+                                // If still error, try fixing again (recursive)
+                                $retryErrorMsg = $retryError->getMessage();
+                                if (strpos($retryErrorMsg, 'Column not found') !== false || strpos($retryErrorMsg, 'Unknown column') !== false) {
+                                    $secondFix = $this->fixMissingColumns($modifiedStatement, $table, $retryErrorMsg);
+                                    if ($secondFix && $secondFix !== $modifiedStatement) {
+                                        try {
+                                            DB::unprepared($secondFix);
+                                            $imported++;
+                                            $this->info("\n✅ Table {$table}: Fixed and imported (removed multiple missing columns)");
+                                        } catch (\Exception $finalError) {
+                                            throw $insertError; // Re-throw original error
+                                        }
+                                    } else {
+                                        throw $insertError; // Re-throw original error
+                                    }
+                                } else {
+                                    throw $insertError; // Re-throw original error
+                                }
+                            }
+                        } else {
+                            throw $insertError; // Re-throw if can't fix
+                        }
+                    } else {
+                        throw $insertError; // Re-throw other errors
+                    }
+                }
+                
                 DB::statement("SET FOREIGN_KEY_CHECKS=1;");
-                $imported++;
             } catch (\Exception $e) {
                 DB::statement("SET FOREIGN_KEY_CHECKS=1;"); // Re-enable in case of error
                 $errors++;
@@ -172,7 +215,7 @@ class ImportSqlData extends Command
                     $errorMsg = $e->getMessage();
                     // Check if it's a column not found error
                     if (strpos($errorMsg, 'Column not found') !== false || strpos($errorMsg, 'Unknown column') !== false) {
-                        $this->warn("\n⚠️  Table {$table}: Column missing (migration mungkin belum jalan)");
+                        $this->warn("\n⚠️  Table {$table}: Column missing (migration mungkin belum jalan) - Jalankan: railway run php artisan migrate --force");
                     } else {
                         $this->error("\n❌ Error in table {$table}: " . substr($errorMsg, 0, 150));
                     }
@@ -196,6 +239,102 @@ class ImportSqlData extends Command
         }
 
         return 0;
+    }
+    
+    /**
+     * Fix SQL statement by removing missing columns
+     */
+    private function fixMissingColumns($statement, $table, $errorMsg)
+    {
+        // Extract missing column name from error
+        preg_match("/Unknown column '([^']+)'/", $errorMsg, $matches);
+        if (empty($matches[1])) {
+            return null;
+        }
+        
+        $missingColumn = $matches[1];
+        
+        // Remove column from INSERT statement
+        // Pattern: INSERT INTO `table` (`col1`, `col2`, ...) VALUES (...)
+        // Handle multi-line VALUES
+        if (preg_match('/INSERT INTO\s+`?(\w+)`?\s*\(([^)]+)\)\s*VALUES\s*((?:\([^)]+\),?\s*)+);/is', $statement, $parts)) {
+            $tableName = $parts[1];
+            $columnsStr = $parts[2];
+            $valuesStr = $parts[3];
+            
+            // Parse columns
+            $columns = array_map(function($col) {
+                return trim(str_replace(['`', "'", '"'], '', $col));
+            }, explode(',', $columnsStr));
+            
+            // Find and remove missing column index
+            $columnIndex = array_search($missingColumn, $columns);
+            if ($columnIndex === false) {
+                // Try with backticks
+                $columnIndex = array_search("`{$missingColumn}`", array_map('trim', explode(',', $columnsStr)));
+            }
+            
+            if ($columnIndex !== false) {
+                // Remove column from list
+                unset($columns[$columnIndex]);
+                $columns = array_values($columns);
+                
+                // Parse and fix all value rows
+                // Extract all value rows: (val1, val2, ...), (val1, val2, ...)
+                preg_match_all('/\(([^)]+)\)/', $valuesStr, $valueRows);
+                $fixedValueRows = [];
+                
+                foreach ($valueRows[1] as $row) {
+                    // Split values carefully (handle quoted strings)
+                    $values = [];
+                    $current = '';
+                    $inQuotes = false;
+                    $quoteChar = null;
+                    
+                    for ($i = 0; $i < strlen($row); $i++) {
+                        $char = $row[$i];
+                        
+                        if (($char === '"' || $char === "'") && ($i === 0 || $row[$i-1] !== '\\')) {
+                            if (!$inQuotes) {
+                                $inQuotes = true;
+                                $quoteChar = $char;
+                            } elseif ($char === $quoteChar) {
+                                $inQuotes = false;
+                                $quoteChar = null;
+                            }
+                        }
+                        
+                        if ($char === ',' && !$inQuotes) {
+                            $values[] = trim($current);
+                            $current = '';
+                        } else {
+                            $current .= $char;
+                        }
+                    }
+                    if ($current !== '') {
+                        $values[] = trim($current);
+                    }
+                    
+                    // Remove value at missing column index
+                    if (isset($values[$columnIndex])) {
+                        unset($values[$columnIndex]);
+                        $values = array_values($values);
+                    }
+                    
+                    $fixedValueRows[] = '(' . implode(', ', $values) . ')';
+                }
+                
+                // Rebuild statement
+                $newColumns = array_map(function($col) {
+                    return "`{$col}`";
+                }, $columns);
+                
+                $newStatement = "INSERT INTO `{$tableName}` (" . implode(', ', $newColumns) . ") VALUES " . implode(', ', $fixedValueRows) . ";";
+                return $newStatement;
+            }
+        }
+        
+        return null;
     }
 }
 

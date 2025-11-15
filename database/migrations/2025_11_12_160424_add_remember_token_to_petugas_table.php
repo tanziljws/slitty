@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('petugas', function (Blueprint $table) {
-            $table->rememberToken()->nullable()->after('password');
+            if (!Schema::hasColumn('petugas', 'remember_token')) {
+                $table->rememberToken()->nullable()->after('password');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('petugas', function (Blueprint $table) {
-            $table->dropColumn('remember_token');
+            if (Schema::hasColumn('petugas', 'remember_token')) {
+                $table->dropColumn('remember_token');
+            }
         });
     }
 };

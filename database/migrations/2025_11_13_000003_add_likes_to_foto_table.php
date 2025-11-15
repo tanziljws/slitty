@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('foto', function (Blueprint $table) {
-            $table->unsignedBigInteger('likes')->default(0)->after('file');
+            if (!Schema::hasColumn('foto', 'likes')) {
+                $table->unsignedBigInteger('likes')->default(0)->after('file');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('foto', function (Blueprint $table) {
-            $table->dropColumn('likes');
+            if (Schema::hasColumn('foto', 'likes')) {
+                $table->dropColumn('likes');
+            }
         });
     }
 };
