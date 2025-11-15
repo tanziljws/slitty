@@ -247,6 +247,150 @@ Route::get('/test-homepage', function () {
     return response()->json($results, 200, [], JSON_PRETTY_PRINT);
 });
 
+// Debug route untuk cek data di database
+Route::get('/test-data', function () {
+    $results = [];
+    
+    try {
+        // Test 1: Cek semua tabel
+        $results['tables'] = [
+            'galery' => Schema::hasTable('galery'),
+            'posts' => Schema::hasTable('posts'),
+            'kategori' => Schema::hasTable('kategori'),
+            'agenda' => Schema::hasTable('agenda'),
+            'informasi' => Schema::hasTable('informasi'),
+            'site_settings' => Schema::hasTable('site_settings'),
+            'users' => Schema::hasTable('users'),
+            'petugas' => Schema::hasTable('petugas'),
+        ];
+        
+        // Test 2: Count data di setiap tabel
+        $results['counts'] = [];
+        
+        if (Schema::hasTable('galery')) {
+            $results['counts']['galery'] = \App\Models\galery::count();
+            $results['counts']['galery_aktif'] = \App\Models\galery::where('status', 'aktif')->count();
+        }
+        
+        if (Schema::hasTable('posts')) {
+            $results['counts']['posts'] = \App\Models\Post::count();
+        }
+        
+        if (Schema::hasTable('kategori')) {
+            $results['counts']['kategori'] = \App\Models\Kategori::count();
+        }
+        
+        if (Schema::hasTable('agenda')) {
+            $results['counts']['agenda'] = \App\Models\Agenda::count();
+            $results['counts']['agenda_aktif'] = \App\Models\Agenda::where('status', 'aktif')->count();
+        }
+        
+        if (Schema::hasTable('informasi')) {
+            $results['counts']['informasi'] = \App\Models\Informasi::count();
+            $results['counts']['informasi_aktif'] = \App\Models\Informasi::where('status', 'aktif')->count();
+        }
+        
+        if (Schema::hasTable('foto')) {
+            $results['counts']['foto'] = \App\Models\Foto::count();
+        }
+        
+        if (Schema::hasTable('users')) {
+            $results['counts']['users'] = \App\Models\User::count();
+        }
+        
+        if (Schema::hasTable('petugas')) {
+            $results['counts']['petugas'] = \App\Models\Petugas::count();
+        }
+        
+        // Test 3: Sample data
+        $results['samples'] = [];
+        
+        if (Schema::hasTable('galery')) {
+            $sampleGaleri = \App\Models\galery::with('post')->first();
+            $results['samples']['galery'] = $sampleGaleri ? [
+                'id' => $sampleGaleri->id,
+                'status' => $sampleGaleri->status,
+                'has_post' => $sampleGaleri->post !== null,
+                'post_title' => $sampleGaleri->post->judul ?? null,
+            ] : null;
+        }
+        
+        if (Schema::hasTable('kategori')) {
+            $sampleKategori = \App\Models\Kategori::first();
+            $results['samples']['kategori'] = $sampleKategori ? [
+                'id' => $sampleKategori->id,
+                'judul' => $sampleKategori->judul,
+            ] : null;
+        }
+        
+        if (Schema::hasTable('agenda')) {
+            $sampleAgenda = \App\Models\Agenda::first();
+            $results['samples']['agenda'] = $sampleAgenda ? [
+                'id' => $sampleAgenda->id,
+                'title' => $sampleAgenda->title,
+                'status' => $sampleAgenda->status,
+            ] : null;
+        }
+        
+        if (Schema::hasTable('informasi')) {
+            $sampleInformasi = \App\Models\Informasi::first();
+            $results['samples']['informasi'] = $sampleInformasi ? [
+                'id' => $sampleInformasi->id,
+                'title' => $sampleInformasi->title ?? 'N/A',
+                'status' => $sampleInformasi->status,
+            ] : null;
+        }
+        
+        // Test 4: Query yang digunakan di route
+        $results['route_queries'] = [];
+        
+        // Query gallery
+        try {
+            if (Schema::hasTable('galery') && Schema::hasTable('posts')) {
+                $galeriCount = \App\Models\galery::with(['post.kategori', 'fotos'])
+                    ->where('status', 'aktif')
+                    ->get()
+                    ->filter(function($gallery) {
+                        return $gallery->post !== null;
+                    })
+                    ->count();
+                $results['route_queries']['gallery_aktif'] = $galeriCount;
+            }
+        } catch (\Exception $e) {
+            $results['route_queries']['gallery_error'] = $e->getMessage();
+        }
+        
+        // Query agenda
+        try {
+            if (Schema::hasTable('agenda')) {
+                $agendaCount = \App\Models\Agenda::where('status', 'aktif')->count();
+                $results['route_queries']['agenda_aktif'] = $agendaCount;
+            }
+        } catch (\Exception $e) {
+            $results['route_queries']['agenda_error'] = $e->getMessage();
+        }
+        
+        // Query informasi
+        try {
+            if (Schema::hasTable('informasi')) {
+                $informasiCount = \App\Models\Informasi::where('status', 'aktif')->count();
+                $results['route_queries']['informasi_aktif'] = $informasiCount;
+            }
+        } catch (\Exception $e) {
+            $results['route_queries']['informasi_error'] = $e->getMessage();
+        }
+        
+    } catch (\Exception $e) {
+        $results['error'] = [
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ];
+    }
+    
+    return response()->json($results, 200, [], JSON_PRETTY_PRINT);
+});
+
 // Debug route untuk test database connection (hapus setelah fix)
 Route::get('/test-db', function () {
     try {
