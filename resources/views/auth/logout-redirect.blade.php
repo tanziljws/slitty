@@ -54,21 +54,43 @@
 
     <!-- Auto-submit logout form -->
     <form id="logoutForm" method="POST" action="{{ route('logout') }}" style="display: none;">
-        @csrf
+        <input type="hidden" name="_token" id="csrfToken" value="{{ csrf_token() }}">
     </form>
 
     <script>
-        // Auto-submit form immediately
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('logoutForm').submit();
-        });
-        
-        // Fallback: submit after 100ms if DOMContentLoaded already fired
-        setTimeout(function() {
-            if (document.getElementById('logoutForm')) {
-                document.getElementById('logoutForm').submit();
+        // Function to get fresh CSRF token
+        function getCsrfToken() {
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            return metaTag ? metaTag.getAttribute('content') : document.getElementById('csrfToken').value;
+        }
+
+        // Function to submit logout form with fresh token
+        function submitLogout() {
+            const form = document.getElementById('logoutForm');
+            const tokenInput = document.getElementById('csrfToken');
+            
+            // Update token before submit
+            const freshToken = getCsrfToken();
+            if (tokenInput && freshToken) {
+                tokenInput.value = freshToken;
             }
-        }, 100);
+            
+            // Submit form
+            if (form) {
+                form.submit();
+            }
+        }
+
+        // Try to submit immediately
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', submitLogout);
+        } else {
+            // DOM already loaded, submit immediately
+            submitLogout();
+        }
+        
+        // Fallback: submit after short delay
+        setTimeout(submitLogout, 200);
     </script>
 </body>
 </html>

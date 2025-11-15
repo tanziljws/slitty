@@ -16,6 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth.petugas' => \App\Http\Middleware\AuthPetugas::class,
         ]);
+        
+        // Use custom VerifyCsrfToken middleware
+        $middleware->validateCsrfTokens(except: [
+            'logout', // Allow GET /logout without CSRF token
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Handle database connection errors gracefully

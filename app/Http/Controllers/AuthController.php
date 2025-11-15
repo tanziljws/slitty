@@ -85,9 +85,17 @@ class AuthController extends Controller
         if (Auth::guard('petugas')->check()) {
             Auth::guard('petugas')->logout();
         }
-        $request->session()->invalidate();  // Hapus session
-        $request->session()->regenerateToken();  // Regenerate token untuk keamanan
-        return redirect()->route('login');  // Arahkan kembali ke halaman login utama
+        
+        // Invalidate session dan regenerate token
+        try {
+            $request->session()->invalidate();  // Hapus session
+            $request->session()->regenerateToken();  // Regenerate token untuk keamanan
+        } catch (\Exception $e) {
+            // Jika session sudah expired atau invalid, tetap lanjutkan logout
+            \Log::warning('Session invalidate error during logout: ' . $e->getMessage());
+        }
+        
+        return redirect()->route('login')->with('message', 'Anda telah berhasil logout.');  // Arahkan kembali ke halaman login utama
     }
 
     public function showRegister()

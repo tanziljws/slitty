@@ -863,11 +863,8 @@ Route::middleware(['guest'])->group(function () {
 });
 
 // Logout routes - support both GET and POST for better compatibility
-Route::get('/logout', function() {
-    // Auto-submit logout form via JavaScript for GET requests
-    return view('auth.logout-redirect');
-})->name('logout.get');
-
+// GET /logout langsung logout tanpa CSRF (aman karena hanya logout, tidak mengubah data)
+Route::get('/logout', [AuthController::class, 'logout'])->name('logout.get');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // -------------------------------
