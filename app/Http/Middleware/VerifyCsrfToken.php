@@ -14,6 +14,8 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         // Exclude GET /logout from CSRF verification (safe because it only logs out, doesn't modify data)
         'logout',
+        // Exclude captcha generation (public access, no sensitive data modified)
+        'download/generate-captcha',
     ];
 }
 

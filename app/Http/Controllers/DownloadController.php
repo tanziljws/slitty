@@ -126,21 +126,40 @@ class DownloadController extends Controller
      */
     public function generateCaptcha(Request $request)
     {
-        $num1 = rand(1, 10);
-        $num2 = rand(1, 10);
-        $answer = $num1 + $num2;
-        
-        $sessionId = bin2hex(random_bytes(16));
-        
-        // Store captcha in cache for 5 minutes
-        Cache::put('captcha_' . $sessionId, [
-            'answer' => $answer,
-            'created_at' => now()
-        ], now()->addMinutes(5));
+        try {
+            $num1 = rand(1, 10);
+            $num2 = rand(1, 10);
+            $answer = $num1 + $num2;
+            
+            $sessionId = bin2hex(random_bytes(16));
+            
+            // Store captcha in cache for 5 minutes
+            Cache::put('captcha_' . $sessionId, [
+                'answer' => $answer,
+                'created_at' => now()
+            ], now()->addMinutes(5));
 
-        return response()->json([
-            'question' => "$num1 + $num2 = ?",
-            'session_id' => $sessionId
-        ]);
+            Log::info('Captcha generated', [
+                'session_id' => $sessionId,
+                'question' => "$num1 + $num2",
+                'answer' => $answer
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'question' => "$num1 + $num2 = ?",
+                'session_id' => $sessionId
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error generating captcha: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat captcha. Silakan coba lagi.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 }

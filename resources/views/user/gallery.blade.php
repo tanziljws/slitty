@@ -1281,23 +1281,87 @@
             document.getElementById('downloadModal').style.display = 'block';
             document.getElementById('captchaAnswer').value = '';
             document.getElementById('captchaError').style.display = 'none';
+            document.getElementById('captchaQuestion').textContent = 'Loading...';
             
             // Generate captcha
             try {
+                // Get CSRF token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (!csrfToken) {
+                    throw new Error('CSRF token tidak ditemukan. Silakan refresh halaman.');
+                }
+                
                 const response = await fetch("{{ route('download.captcha') }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    credentials: 'same-origin'
                 });
                 
+                // Check if response is ok
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = 'Gagal memuat captcha';
+                    
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (e) {
+                        // If not JSON, use status text
+                        if (response.status === 419) {
+                            errorMessage = 'Session expired. Silakan refresh halaman.';
+                        } else if (response.status === 500) {
+                            errorMessage = 'Server error. Silakan coba lagi.';
+                        }
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
                 const data = await response.json();
-                document.getElementById('captchaQuestion').textContent = data.question;
-                currentCaptchaSession = data.session_id;
+                
+                if (data.question && data.session_id) {
+                    document.getElementById('captchaQuestion').textContent = data.question;
+                    currentCaptchaSession = data.session_id;
+                } else {
+                    throw new Error('Format response captcha tidak valid');
+                }
             } catch (error) {
                 console.error('Error generating captcha:', error);
-                document.getElementById('captchaQuestion').textContent = 'Error loading captcha';
+                const errorMessage = error.message || 'Error loading captcha';
+                document.getElementById('captchaQuestion').textContent = errorMessage;
+                document.getElementById('captchaError').textContent = errorMessage + '. Silakan tutup dan buka kembali modal download.';
+                document.getElementById('captchaError').style.display = 'block';
+                
+                // Retry after 2 seconds
+                setTimeout(async () => {
+                    try {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                        const response = await fetch("{{ route('download.captcha') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken || ''
+                            },
+                            credentials: 'same-origin'
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.question && data.session_id) {
+                                document.getElementById('captchaQuestion').textContent = data.question;
+                                currentCaptchaSession = data.session_id;
+                                document.getElementById('captchaError').style.display = 'none';
+                            }
+                        }
+                    } catch (retryError) {
+                        console.error('Retry failed:', retryError);
+                    }
+                }, 2000);
             }
         }
         
