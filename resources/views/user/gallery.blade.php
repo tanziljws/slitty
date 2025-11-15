@@ -1281,6 +1281,74 @@
             updateCarousel();
         }
         
+        // Function to load captcha (can be called independently)
+        async function loadCaptcha() {
+            document.getElementById('captchaAnswer').value = '';
+            document.getElementById('captchaError').style.display = 'none';
+            document.getElementById('captchaQuestion').textContent = 'Loading...';
+            
+            try {
+                // Get CSRF token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (!csrfToken) {
+                    throw new Error('CSRF token tidak ditemukan. Silakan refresh halaman.');
+                }
+                
+                const response = await fetch("{{ route('download.captcha') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                // Check if response is ok
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = 'Gagal memuat captcha';
+                    
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (e) {
+                        // If not JSON, use status text
+                        if (response.status === 419) {
+                            errorMessage = 'Session expired. Silakan refresh halaman.';
+                        } else if (response.status === 500) {
+                            errorMessage = 'Server error. Silakan coba lagi.';
+                        }
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+                
+                const data = await response.json();
+                
+                if (data.question && data.session_id) {
+                    document.getElementById('captchaQuestion').textContent = data.question;
+                    currentCaptchaSession = data.session_id;
+                    document.getElementById('captchaError').style.display = 'none';
+                    return true;
+                } else {
+                    throw new Error('Format response captcha tidak valid');
+                }
+            } catch (error) {
+                console.error('Error loading captcha:', error);
+                const errorMessage = error.message || 'Error loading captcha';
+                document.getElementById('captchaQuestion').textContent = errorMessage;
+                document.getElementById('captchaError').textContent = errorMessage + '. Silakan coba lagi.';
+                document.getElementById('captchaError').style.display = 'block';
+                return false;
+            }
+        }
+        
+        // Function to refresh captcha
+        async function refreshCaptcha() {
+            await loadCaptcha();
+        }
+        
         async function openDownloadModal(filePath, fileName) {
             currentFilePath = filePath;
             document.getElementById('downloadModal').style.display = 'block';
