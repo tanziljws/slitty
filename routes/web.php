@@ -836,6 +836,8 @@ Route::get('/user/informasi', function () {
 Route::get('/page/{slug}', [PageController::class, 'showBySlug'])->name('page.show');
 
 // Download routes with captcha
+// Support both GET and POST for captcha generation (GET as fallback, POST preferred)
+Route::get('/download/generate-captcha', [DownloadController::class, 'generateCaptcha'])->name('download.captcha.get');
 Route::post('/download/generate-captcha', [DownloadController::class, 'generateCaptcha'])->name('download.captcha');
 Route::post('/download/verify', [DownloadController::class, 'verifyCaptcha'])->name('download.verify');
 Route::get('/download/{token}', [DownloadController::class, 'download'])->name('download.file');

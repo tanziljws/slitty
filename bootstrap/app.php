@@ -20,7 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Use custom VerifyCsrfToken middleware
         $middleware->validateCsrfTokens(except: [
             'logout', // Allow GET /logout without CSRF token
-            'download/generate-captcha', // Allow captcha generation (public access)
+            'download/generate-captcha', // Allow captcha generation (public access, both GET and POST)
+            'download/verify', // Allow captcha verification (but still requires CSRF for security)
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

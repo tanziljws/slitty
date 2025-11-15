@@ -1297,8 +1297,9 @@
                 return false;
             }
             
-            // Get captcha URL - use route helper or fallback to absolute path
-            const captchaUrl = "{{ route('download.captcha') }}";
+            // Get captcha URL - try POST first, fallback to GET if needed
+            const captchaUrlPost = "{{ route('download.captcha') }}";
+            const captchaUrlGet = "{{ route('download.captcha.get') }}";
             
             // Retry mechanism dengan 3 attempts
             let lastError = null;
@@ -1307,14 +1308,25 @@
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
                     
+                    // Try POST first, fallback to GET if POST fails with CSRF error
+                    const useGet = attempt > 1 || lastError?.status === 419;
+                    const captchaUrl = useGet ? captchaUrlGet : captchaUrlPost;
+                    const method = useGet ? 'GET' : 'POST';
+                    
+                    const headers = {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+                    
+                    // Only add CSRF token for POST requests
+                    if (method === 'POST' && csrfToken) {
+                        headers['Content-Type'] = 'application/json';
+                        headers['X-CSRF-TOKEN'] = csrfToken;
+                    }
+                    
                     const response = await fetch(captchaUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
+                        method: method,
+                        headers: headers,
                         credentials: 'same-origin',
                         signal: controller.signal,
                         cache: 'no-cache'
