@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\galery;
+use App\Models\Galery;
 use App\Models\Kategori;
 use App\Models\Petugas;
 use App\Models\Page;
@@ -15,15 +15,15 @@ class DashboardController extends Controller
     public function index()
     {
         // Get real statistics
-        $totalGaleri = galery::count();
-        $galeriAktif = galery::where('status', 'aktif')->count();
+        $totalGaleri = Galery::count();
+        $galeriAktif = Galery::where('status', 'aktif')->count();
         $totalKategori = Kategori::count();
         $totalPetugas = Petugas::count();
         $totalPages = Page::count();
         $totalUsers = User::count();
         
         // Get recent galeri (last 5) - order by posts created_at
-        $recentGaleri = galery::with(['post.kategori', 'fotos'])
+        $recentGaleri = Galery::with(['post.kategori', 'fotos'])
             ->join('posts', 'galery.post_id', '=', 'posts.id')
             ->orderBy('posts.created_at', 'desc')
             ->select('galery.*')
@@ -31,7 +31,7 @@ class DashboardController extends Controller
             ->get();
         
         // Get galeri pending approval (if any) - order by posts created_at
-        $pendingGaleri = galery::where('galery.status', 'nonaktif')
+        $pendingGaleri = Galery::where('galery.status', 'nonaktif')
             ->with(['post.kategori', 'fotos'])
             ->join('posts', 'galery.post_id', '=', 'posts.id')
             ->orderBy('posts.created_at', 'desc')

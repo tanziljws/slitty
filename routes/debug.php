@@ -41,7 +41,7 @@ Route::get('/debug/homepage', function () {
     
     // Test 5: Try the actual query
     try {
-        $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
+        $latestGalleries = \App\Models\Galery::with(['post.kategori', 'fotos'])
             ->join('posts', 'galery.post_id', '=', 'posts.id')
             ->where('galery.status', 'aktif')
             ->orderBy('posts.created_at', 'desc')

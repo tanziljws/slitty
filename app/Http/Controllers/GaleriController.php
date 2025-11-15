@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
-use App\Models\galery;
+use App\Models\Galery;
 use App\Models\Kategori;
 use App\Models\Foto;
 use Illuminate\Http\Request;
@@ -14,7 +14,7 @@ class GaleriController extends Controller
 {
     public function index(Request $request)
     {
-        $galeri = galery::with(['post.kategori', 'fotos'])->get();
+        $galeri = Galery::with(['post.kategori', 'fotos'])->get();
 
         if ($request->ajax()) {
             return response()->json($galeri);
@@ -129,7 +129,7 @@ class GaleriController extends Controller
         return redirect()->route('galeri.index')->with('success', count($uploadedFiles) . ' foto berhasil ditambahkan ke galeri dan akan tersimpan permanen!');
     }
 
-    public function show(galery $galeri)
+    public function show(Galery $galeri)
     {
         $galeri->load(['post.kategori', 'fotos']);
         
@@ -140,7 +140,7 @@ class GaleriController extends Controller
         return view('galeri.show', compact('galeri'));
     }
 
-    public function edit(galery $galeri)
+    public function edit(Galery $galeri)
     {
         $kategori = Kategori::all();
         $galeri->load(['post.kategori', 'fotos']);
@@ -153,7 +153,7 @@ class GaleriController extends Controller
         return view('galeri.edit', compact('galeri', 'kategori'));
     }
 
-    public function update(Request $request, galery $galeri)
+    public function update(Request $request, Galery $galeri)
     {
         $request->validate([
             'judul' => 'required|string|max:255',
@@ -199,7 +199,7 @@ class GaleriController extends Controller
         return redirect()->route('galeri.index')->with('success', 'Galeri berhasil diupdate!');
     }
 
-    public function destroy(galery $galeri)
+    public function destroy(Galery $galeri)
     {
         // Logging sebelum menghapus
         Log::info('Gallery deletion started', [
@@ -252,7 +252,7 @@ class GaleriController extends Controller
     }
 
     // Tambahan: toggle status (aktif/nonaktif atau verified/pending)
-    public function toggleStatus(galery $galeri)
+    public function toggleStatus(Galery $galeri)
     {
         $galeri->status = $galeri->status === 'aktif' ? 'nonaktif' : 'aktif';
         $galeri->save();

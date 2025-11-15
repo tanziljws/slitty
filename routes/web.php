@@ -39,7 +39,7 @@ Route::get('/test-homepage-full', function () {
         
         // Test 2: Query galleries
         try {
-            $latestGaleriIds = \App\Models\galery::join('posts', 'galery.post_id', '=', 'posts.id')
+            $latestGaleriIds = \App\Models\Galery::join('posts', 'galery.post_id', '=', 'posts.id')
                 ->where('galery.status', 'aktif')
                 ->orderBy('posts.created_at', 'desc')
                 ->select('galery.id')
@@ -49,7 +49,7 @@ Route::get('/test-homepage-full', function () {
             $results['gallery_ids'] = $latestGaleriIds->toArray();
             
             if ($latestGaleriIds->isNotEmpty()) {
-    $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
+    $latestGalleries = \App\Models\Galery::with(['post.kategori', 'fotos'])
                     ->whereIn('id', $latestGaleriIds)
                     ->get()
                     ->filter(function($gallery) {
@@ -120,7 +120,7 @@ Route::get('/test-homepage-full', function () {
             $latestAgendas = collect([]);
             
             if (Schema::hasTable('galery') && Schema::hasTable('posts')) {
-                $latestGaleriIds = \App\Models\galery::join('posts', 'galery.post_id', '=', 'posts.id')
+                $latestGaleriIds = \App\Models\Galery::join('posts', 'galery.post_id', '=', 'posts.id')
                     ->where('galery.status', 'aktif')
                     ->orderBy('posts.created_at', 'desc')
                     ->select('galery.id')
@@ -128,7 +128,7 @@ Route::get('/test-homepage-full', function () {
                     ->pluck('id');
                 
                 if ($latestGaleriIds->isNotEmpty()) {
-                    $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
+                    $latestGalleries = \App\Models\Galery::with(['post.kategori', 'fotos'])
                         ->whereIn('id', $latestGaleriIds)
                         ->get()
                         ->filter(function($gallery) {
@@ -184,7 +184,7 @@ Route::get('/test-homepage', function () {
         
         // Test 2: Query galleries
         try {
-            $latestGaleriIds = \App\Models\galery::join('posts', 'galery.post_id', '=', 'posts.id')
+            $latestGaleriIds = \App\Models\Galery::join('posts', 'galery.post_id', '=', 'posts.id')
                 ->where('galery.status', 'aktif')
                 ->orderBy('posts.created_at', 'desc')
                 ->select('galery.id')
@@ -194,7 +194,7 @@ Route::get('/test-homepage', function () {
             $results['gallery_ids'] = $latestGaleriIds->toArray();
             
             if ($latestGaleriIds->isNotEmpty()) {
-                $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
+                $latestGalleries = \App\Models\Galery::with(['post.kategori', 'fotos'])
                     ->whereIn('id', $latestGaleriIds)
                     ->get();
                 
@@ -291,8 +291,8 @@ Route::get('/test-files-vs-db', function () {
         
         // 5. Cek galeri dan posts
         if (Schema::hasTable('galery')) {
-            $results['database']['galery_count'] = \App\Models\galery::count();
-            $results['database']['galery_aktif'] = \App\Models\galery::where('status', 'aktif')->count();
+            $results['database']['galery_count'] = \App\Models\Galery::count();
+            $results['database']['galery_aktif'] = \App\Models\Galery::where('status', 'aktif')->count();
         }
         
         if (Schema::hasTable('posts')) {
@@ -301,7 +301,7 @@ Route::get('/test-files-vs-db', function () {
         
         // 6. Cek relasi galery -> post -> foto
         if (Schema::hasTable('galery') && Schema::hasTable('posts') && Schema::hasTable('foto')) {
-            $galeriWithFotos = \App\Models\galery::with(['post', 'fotos'])
+            $galeriWithFotos = \App\Models\Galery::with(['post', 'fotos'])
                 ->where('status', 'aktif')
                 ->get()
                 ->filter(function($g) {
@@ -353,8 +353,8 @@ Route::get('/test-data', function () {
         $results['counts'] = [];
         
         if (Schema::hasTable('galery')) {
-            $results['counts']['galery'] = \App\Models\galery::count();
-            $results['counts']['galery_aktif'] = \App\Models\galery::where('status', 'aktif')->count();
+            $results['counts']['galery'] = \App\Models\Galery::count();
+            $results['counts']['galery_aktif'] = \App\Models\Galery::where('status', 'aktif')->count();
         }
         
         if (Schema::hasTable('posts')) {
@@ -391,7 +391,7 @@ Route::get('/test-data', function () {
         $results['samples'] = [];
         
         if (Schema::hasTable('galery')) {
-            $sampleGaleri = \App\Models\galery::with('post')->first();
+            $sampleGaleri = \App\Models\Galery::with('post')->first();
             $results['samples']['galery'] = $sampleGaleri ? [
                 'id' => $sampleGaleri->id,
                 'status' => $sampleGaleri->status,
@@ -432,7 +432,7 @@ Route::get('/test-data', function () {
         // Query gallery
         try {
             if (Schema::hasTable('galery') && Schema::hasTable('posts')) {
-                $galeriCount = \App\Models\galery::with(['post.kategori', 'fotos'])
+                $galeriCount = \App\Models\Galery::with(['post.kategori', 'fotos'])
                     ->where('status', 'aktif')
                     ->get()
                     ->filter(function($gallery) {
@@ -523,7 +523,7 @@ Route::get('/', function () {
             
             if ($hasGalery && $hasPosts) {
                 // Ambil ID galeri terbaru dulu
-                $latestGaleriIds = \App\Models\galery::join('posts', 'galery.post_id', '=', 'posts.id')
+                $latestGaleriIds = \App\Models\Galery::join('posts', 'galery.post_id', '=', 'posts.id')
                     ->where('galery.status', 'aktif')
                     ->orderBy('posts.created_at', 'desc')
                     ->select('galery.id')
@@ -532,7 +532,7 @@ Route::get('/', function () {
                 
                 // Load dengan relasi
                 if ($latestGaleriIds->isNotEmpty()) {
-                    $latestGalleries = \App\Models\galery::with(['post.kategori', 'fotos'])
+                    $latestGalleries = \App\Models\Galery::with(['post.kategori', 'fotos'])
                         ->whereIn('id', $latestGaleriIds)
                         ->get()
                         ->filter(function($gallery) {
@@ -697,7 +697,7 @@ Route::get('/user/gallery', function () {
             
             if ($hasGalery && $hasPosts) {
                 try {
-                    $galeri = \App\Models\galery::with(['post.kategori', 'fotos'])
+                    $galeri = \App\Models\Galery::with(['post.kategori', 'fotos'])
                         ->where('status', 'aktif')
                         ->get()
                         ->filter(function($gallery) {
