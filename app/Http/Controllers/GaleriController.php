@@ -96,8 +96,29 @@ class GaleriController extends Controller
         $uploadedFiles = [];
         if ($request->hasFile('fotos')) {
             foreach ($request->file('fotos') as $index => $foto) {
-                $namaFoto = time() . '_' . $index . '.' . $foto->getClientOriginalExtension();
-                $foto->move(public_path('uploads/galeri'), $namaFoto);
+                // Normalize extension to lowercase untuk menghindari case sensitivity issues
+                $extension = strtolower($foto->getClientOriginalExtension());
+                $namaFoto = time() . '_' . $index . '.' . $extension;
+                $uploadPath = public_path('uploads/galeri');
+                
+                // Pastikan folder ada
+                if (!file_exists($uploadPath)) {
+                    mkdir($uploadPath, 0755, true);
+                }
+                
+                // Upload file
+                $fullPath = $uploadPath . '/' . $namaFoto;
+                $foto->move($uploadPath, $namaFoto);
+                
+                // Verifikasi file benar-benar tersimpan
+                if (!file_exists($fullPath)) {
+                    Log::error('File upload failed - file not found after move', [
+                        'filename' => $namaFoto,
+                        'upload_path' => $uploadPath,
+                        'full_path' => $fullPath
+                    ]);
+                    continue; // Skip file ini dan lanjut ke file berikutnya
+                }
                 
                 // Simpan ke tabel foto dengan cara yang lebih aman
                 $fotoRecord = new Foto();
@@ -110,6 +131,8 @@ class GaleriController extends Controller
                     'photo_id' => $fotoRecord->id,
                     'gallery_id' => $galeri->id,
                     'filename' => $namaFoto,
+                    'file_size' => filesize($fullPath),
+                    'file_exists' => file_exists($fullPath),
                     'uploaded_at' => now()->format('Y-m-d H:i:s')
                 ]);
                 
@@ -180,14 +203,43 @@ class GaleriController extends Controller
 
         // Handle new photo uploads
         if ($request->hasFile('fotos')) {
+            $uploadPath = public_path('uploads/galeri');
+            
+            // Pastikan folder ada
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+            
             foreach ($request->file('fotos') as $foto) {
-                $namaFoto = time() . '_' . uniqid() . '.' . $foto->getClientOriginalExtension();
-                $foto->move(public_path('uploads/galeri'), $namaFoto);
+                // Normalize extension to lowercase untuk menghindari case sensitivity issues
+                $extension = strtolower($foto->getClientOriginalExtension());
+                $namaFoto = time() . '_' . uniqid() . '.' . $extension;
+                $fullPath = $uploadPath . '/' . $namaFoto;
+                
+                // Upload file
+                $foto->move($uploadPath, $namaFoto);
+                
+                // Verifikasi file benar-benar tersimpan
+                if (!file_exists($fullPath)) {
+                    Log::error('File upload failed during update - file not found after move', [
+                        'filename' => $namaFoto,
+                        'upload_path' => $uploadPath,
+                        'full_path' => $fullPath
+                    ]);
+                    continue; // Skip file ini dan lanjut ke file berikutnya
+                }
                 
                 // Create foto record
                 $galeri->fotos()->create([
                     'file' => $namaFoto,
                     'galeri_id' => $galeri->id
+                ]);
+                
+                Log::info('Photo uploaded during gallery update', [
+                    'gallery_id' => $galeri->id,
+                    'filename' => $namaFoto,
+                    'file_size' => filesize($fullPath),
+                    'uploaded_at' => now()->format('Y-m-d H:i:s')
                 ]);
             }
         }
