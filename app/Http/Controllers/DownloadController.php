@@ -149,7 +149,9 @@ class DownloadController extends Controller
                 'success' => true,
                 'question' => "$num1 + $num2 = ?",
                 'session_id' => $sessionId
-            ]);
+            ])->header('Access-Control-Allow-Origin', '*')
+              ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+              ->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, X-CSRF-TOKEN');
         } catch (\Exception $e) {
             Log::error('Error generating captcha: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()

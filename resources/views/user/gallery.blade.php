@@ -1297,9 +1297,10 @@
                 return false;
             }
             
-            // Get captcha URL - try POST first, fallback to GET if needed
-            const captchaUrlPost = "{{ route('download.captcha') }}";
-            const captchaUrlGet = "{{ route('download.captcha.get') }}";
+            // Get captcha URL - use relative URLs to avoid CORS issues
+            // Use relative path instead of absolute URL to prevent CORS errors
+            const captchaUrlPost = "/download/generate-captcha";
+            const captchaUrlGet = "/download/generate-captcha";
             
             // Retry mechanism dengan 3 attempts
             let lastError = null;
@@ -1450,7 +1451,7 @@
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
                 
-                const response = await fetch("{{ route('download.verify') }}", {
+                const response = await fetch("/download/verify", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

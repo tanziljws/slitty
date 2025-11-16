@@ -115,9 +115,22 @@ class GaleriController extends Controller
                     Log::error('File upload failed - file not found after move', [
                         'filename' => $namaFoto,
                         'upload_path' => $uploadPath,
-                        'full_path' => $fullPath
+                        'full_path' => $fullPath,
+                        'original_name' => $foto->getClientOriginalName(),
+                        'mime_type' => $foto->getMimeType()
                     ]);
                     continue; // Skip file ini dan lanjut ke file berikutnya
+                }
+                
+                // Verify file is readable and has content
+                if (!is_readable($fullPath) || filesize($fullPath) === 0) {
+                    Log::error('File upload failed - file is not readable or empty', [
+                        'filename' => $namaFoto,
+                        'full_path' => $fullPath,
+                        'file_size' => filesize($fullPath),
+                        'is_readable' => is_readable($fullPath)
+                    ]);
+                    continue;
                 }
                 
                 // Simpan ke tabel foto dengan cara yang lebih aman
@@ -133,6 +146,8 @@ class GaleriController extends Controller
                     'filename' => $namaFoto,
                     'file_size' => filesize($fullPath),
                     'file_exists' => file_exists($fullPath),
+                    'is_readable' => is_readable($fullPath),
+                    'public_url' => asset('uploads/galeri/' . $namaFoto),
                     'uploaded_at' => now()->format('Y-m-d H:i:s')
                 ]);
                 
