@@ -890,6 +890,8 @@ Route::middleware(['auth:petugas'])->group(function () {
     // ✅ Resource CRUD routes
     Route::resource('kategori', KategoriController::class);
     Route::resource('galeri', GaleriController::class);
+    // Route untuk menghapus foto individual
+    Route::delete('/galeri/foto/{foto}', [FotoController::class, 'destroy'])->name('foto.destroy');
     Route::resource('petugas', PetugasController::class);
     
     // Informasi - Edit only (school identity)

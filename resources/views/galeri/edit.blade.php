@@ -160,9 +160,14 @@
 function deletePhoto(fotoId) {
     if (confirm('Apakah Anda yakin ingin menghapus foto ini?')) {
         const form = document.getElementById('deletePhotoForm');
+        // Use route helper or direct path
         form.action = `/galeri/foto/${fotoId}`;
         form.submit();
+        
+        // Prevent any default behavior that might cause navigation issues
+        return false;
     }
+    return false;
 }
 </script>
 @endsection

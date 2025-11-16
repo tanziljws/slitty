@@ -224,4 +224,76 @@ class FotoController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Delete individual photo
+     */
+    public function destroy($foto)
+    {
+        try {
+            // Handle both model binding and ID
+            if (is_numeric($foto)) {
+                $foto = Foto::findOrFail($foto);
+            }
+            
+            $galeryId = $foto->galery_id; // Get galery_id before deletion
+            
+            Log::info('Photo deletion started', [
+                'photo_id' => $foto->id,
+                'galery_id' => $galeryId,
+                'filename' => $foto->file,
+                'started_at' => now()->format('Y-m-d H:i:s')
+            ]);
+
+            // Delete physical file
+            $filePath = public_path('uploads/galeri/' . $foto->file);
+            if (file_exists($filePath)) {
+                unlink($filePath);
+                Log::info('Photo file deleted', [
+                    'photo_id' => $foto->id,
+                    'filename' => $foto->file,
+                    'deleted_at' => now()->format('Y-m-d H:i:s')
+                ]);
+            }
+
+            // Delete foto record (this will cascade delete likes/dislikes)
+            $foto->delete();
+
+            Log::info('Photo deletion completed', [
+                'photo_id' => $foto->id,
+                'galery_id' => $galeryId,
+                'completed_at' => now()->format('Y-m-d H:i:s')
+            ]);
+
+            // Redirect back to galeri edit page (not to show page of deleted foto)
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Foto berhasil dihapus',
+                    'redirect_url' => route('galeri.edit', $galeryId)
+                ]);
+            }
+
+            return redirect()->route('galeri.edit', $galeryId)
+                ->with('success', 'Foto berhasil dihapus!');
+
+        } catch (\Exception $e) {
+            $photoId = is_numeric($foto) ? $foto : ($foto->id ?? 'unknown');
+            Log::error('Error deleting photo: ' . $e->getMessage(), [
+                'photo_id' => $photoId,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus foto: ' . $e->getMessage()
+                ], 500);
+            }
+
+            // Fallback: redirect to galeri index if galery_id not found
+            return redirect()->route('galeri.index')
+                ->with('error', 'Gagal menghapus foto: ' . $e->getMessage());
+        }
+    }
 }
