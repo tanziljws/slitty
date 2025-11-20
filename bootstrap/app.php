@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Custom AuthPetugas middleware bisa digunakan dengan alias 'auth.petugas' jika diperlukan
         // Tapi untuk route yang menggunakan 'auth:petugas', Laravel akan otomatis menggunakan guard 'petugas'
         
+        // Force HTTPS di production
+        $middleware->append(\App\Http\Middleware\ForceHttps::class);
+        
         // Use custom VerifyCsrfToken middleware
         $middleware->validateCsrfTokens(except: [
             'logout', // Allow GET /logout without CSRF token
