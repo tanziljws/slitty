@@ -78,52 +78,53 @@ class AuthController extends Controller
             $petugas = Auth::guard('petugas')->user();
             
             if ($petugas) {
-                // Regenerate session untuk security (setelah attempt berhasil)
+                // CRITICAL FIX: Jangan regenerate session dulu, save dulu untuk memastikan guard tersimpan
+                // Regenerate bisa menghapus guard, jadi kita save dulu, baru regenerate
+                
+                // Step 1: Save session dengan guard yang sudah authenticated
+                $request->session()->save();
+                
+                // Step 2: Verify guard masih check sebelum regenerate
+                $guardCheckBeforeRegenerate = Auth::guard('petugas')->check();
+                \Log::info('Before regenerate', [
+                    'petugas_id' => $petugas->id,
+                    'guard_check' => $guardCheckBeforeRegenerate,
+                    'session_id' => $request->session()->getId(),
+                ]);
+                
+                // Step 3: Regenerate session (ini bisa menghapus guard, jadi kita handle dengan hati-hati)
                 $oldSessionId = $request->session()->getId();
                 $request->session()->regenerate();
                 $newSessionId = $request->session()->getId();
                 
-                // Log untuk debugging
-                \Log::info('Petugas login successful', [
+                // Step 4: CRITICAL - Re-authenticate setelah regenerate karena regenerate bisa menghapus guard
+                // Ini adalah workaround untuk masalah Laravel session regenerate dengan custom guards
+                if (!Auth::guard('petugas')->check()) {
+                    \Log::warning('Guard lost after regenerate (expected), re-authenticating', [
+                        'petugas_id' => $petugas->id,
+                        'old_session' => $oldSessionId,
+                        'new_session' => $newSessionId,
+                    ]);
+                    
+                    // Re-authenticate dengan explicit login
+                    Auth::guard('petugas')->login($petugas, $remember);
+                }
+                
+                // Step 5: Save lagi setelah re-authenticate
+                $request->session()->save();
+                
+                // Step 6: Final verification
+                $finalCheck = Auth::guard('petugas')->check();
+                \Log::info('Petugas login successful - Final check', [
                     'id' => $petugas->id,
                     'email' => $petugas->email,
                     'username' => $petugas->username ?? 'N/A',
                     'old_session_id' => $oldSessionId,
                     'new_session_id' => $newSessionId,
+                    'guard_check_before_regenerate' => $guardCheckBeforeRegenerate,
                     'guard_check_after_regenerate' => Auth::guard('petugas')->check(),
-                ]);
-                
-                // CRITICAL: Pastikan guard masih authenticated setelah regenerate
-                // Jika tidak, re-login dengan explicit login method
-                if (!Auth::guard('petugas')->check()) {
-                    \Log::warning('Guard lost after regenerate, re-authenticating', [
-                        'petugas_id' => $petugas->id,
-                    ]);
-                    
-                    // Re-authenticate dengan explicit login
-                    Auth::guard('petugas')->login($petugas, $remember);
-                    
-                    // Verify lagi
-                    if (!Auth::guard('petugas')->check()) {
-                        \Log::error('Failed to re-authenticate petugas after regenerate', [
-                            'petugas_id' => $petugas->id,
-                        ]);
-                        // Fallback: return error
-                        return back()->withErrors([
-                            'email' => 'Login berhasil tapi session tidak tersimpan. Silakan coba lagi.',
-                        ])->onlyInput('email');
-                    }
-                }
-                
-                // Final save untuk memastikan session tersimpan
-                $request->session()->save();
-                
-                // Final verification
-                $finalCheck = Auth::guard('petugas')->check();
-                \Log::info('Final authentication check', [
-                    'guard_check' => $finalCheck,
-                    'petugas_id' => Auth::guard('petugas')->id(),
-                    'session_id' => $request->session()->getId(),
+                    'final_guard_check' => $finalCheck,
+                    'final_petugas_id' => Auth::guard('petugas')->id(),
                 ]);
                 
                 if (!$finalCheck) {
@@ -137,8 +138,8 @@ class AuthController extends Controller
             }
             
             // Petugas/admin tetap diarahkan ke dashboard admin
-            // Gunakan redirect langsung dengan absolute URL untuk memastikan
-            return redirect()->to('/dashboard');
+            // Gunakan redirect langsung
+            return redirect('/dashboard');
         }
 
         // Jika login gagal, tampilkan error
