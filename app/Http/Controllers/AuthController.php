@@ -68,6 +68,19 @@ class AuthController extends Controller
 
         if (Auth::guard('petugas')->attempt($petugasCredentials, $remember)) {
             $request->session()->regenerate();
+            
+            // Pastikan session tersimpan dengan benar
+            // Set session untuk guard petugas secara eksplisit
+            $petugas = Auth::guard('petugas')->user();
+            if ($petugas) {
+                // Log untuk debugging (hapus di production jika tidak perlu)
+                \Log::info('Petugas login successful', [
+                    'id' => $petugas->id,
+                    'email' => $petugas->email,
+                    'username' => $petugas->username ?? 'N/A',
+                ]);
+            }
+            
             // Petugas/admin tetap diarahkan ke dashboard admin
             // Gunakan redirect langsung, bukan intended, untuk memastikan selalu ke dashboard
             return redirect('/dashboard');

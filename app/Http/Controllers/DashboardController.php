@@ -14,6 +14,15 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // Debug: Cek apakah user sudah login sebagai petugas
+        if (!\Illuminate\Support\Facades\Auth::guard('petugas')->check()) {
+            \Log::warning('Dashboard accessed without petugas authentication', [
+                'user' => \Illuminate\Support\Facades\Auth::guard('petugas')->user(),
+                'web_user' => \Illuminate\Support\Facades\Auth::user(),
+            ]);
+            // Redirect ke login jika tidak authenticated
+            return redirect()->route('login');
+        }
         // Get real statistics
         $totalGaleri = Galery::count();
         $galeriAktif = Galery::where('status', 'aktif')->count();
