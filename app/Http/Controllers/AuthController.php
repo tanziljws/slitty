@@ -11,15 +11,22 @@ class AuthController extends Controller
 {
     public function showLogin()
     {
-        // Jika sudah login sebagai petugas/admin, arahkan ke dashboard admin
+        // Cek petugas guard dulu (prioritas lebih tinggi)
         if (Auth::guard('petugas')->check()) {
+            \Log::info('showLogin: Petugas already logged in, redirecting to dashboard', [
+                'petugas_id' => Auth::guard('petugas')->id(),
+            ]);
             return redirect('/dashboard');
         }
 
         // Jika sudah login sebagai user biasa, arahkan ke beranda user
         if (Auth::check()) {
+            \Log::info('showLogin: Web user already logged in, redirecting to homepage', [
+                'user_id' => Auth::id(),
+            ]);
             return redirect()->route('user.dashboard');
         }
+        
         // Generate captcha sederhana untuk login (dan register di halaman yang sama)
         $a = rand(1, 9);
         $b = rand(1, 9);
