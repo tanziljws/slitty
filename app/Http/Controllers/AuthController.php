@@ -87,7 +87,7 @@ class AuthController extends Controller
         $login = $request->input('email');
         $remember = $request->filled('remember');
 
-        // ADMIN LOGIN: Hanya dari tabel petugas, tidak ada fallback ke user
+        // Coba login sebagai Petugas DULU (untuk admin)
         // Petugas bisa login dengan email atau username
         $petugasCredentials = filter_var($login, FILTER_VALIDATE_EMAIL)
             ? ['email' => $login, 'password' => $request->password]
@@ -161,15 +161,24 @@ class AuthController extends Controller
             return redirect('/dashboard');
         }
 
-        // Jika login sebagai Petugas gagal, langsung error - TIDAK ADA FALLBACK KE USER
-        \Log::warning('Petugas login failed', [
+        // Jika login sebagai Petugas gagal, coba login sebagai User (hanya jika input berupa email)
+        // User biasa tidak bisa akses dashboard admin, hanya untuk akses publik
+        if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+            if (Auth::attempt(['email' => $login, 'password' => $request->password], $remember)) {
+                $request->session()->regenerate();
+                // User biasa diarahkan ke beranda user (bukan dashboard admin)
+                return redirect()->route('user.dashboard');
+            }
+        }
+
+        // Jika semua login gagal, tampilkan error
+        \Log::warning('Login failed for both petugas and user', [
             'login_input' => $login,
             'is_email' => filter_var($login, FILTER_VALIDATE_EMAIL),
-            'attempted_credentials' => $petugasCredentials,
         ]);
         
         return back()->withErrors([
-            'email' => 'Email/username atau password yang Anda masukkan salah. Pastikan Anda login sebagai admin/petugas.',
+            'email' => 'Email/username atau password yang Anda masukkan salah.',
         ])->onlyInput('email');
     }
 
