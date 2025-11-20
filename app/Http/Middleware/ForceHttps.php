@@ -17,15 +17,19 @@ class ForceHttps
      */
     public function handle(Request $request, Closure $next)
     {
-        // Force HTTPS di production
-        if (app()->environment('production') && !$request->secure()) {
+        // Force HTTPS untuk semua request (tidak hanya production)
+        // Cek apakah request sudah secure atau melalui proxy (Railway menggunakan X-Forwarded-Proto)
+        $isSecure = $request->secure() || 
+                    $request->header('X-Forwarded-Proto') === 'https' ||
+                    $request->header('X-Forwarded-Ssl') === 'on';
+        
+        if (!$isSecure) {
+            // Redirect ke HTTPS
             return redirect()->secure($request->getRequestUri());
         }
 
         // Force scheme untuk semua URL generation
-        if (app()->environment('production')) {
-            URL::forceScheme('https');
-        }
+        URL::forceScheme('https');
 
         return $next($request);
     }

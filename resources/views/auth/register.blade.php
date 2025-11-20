@@ -113,6 +113,14 @@
             <p class="register-subtitle">Buat akun untuk mengakses fitur galeri SMKN 4 Bogor.</p>
         </div>
 
+        @if(!isset($isSecure) || !$isSecure)
+            <div style="background: #fef3c7; border: 2px solid #f59e0b; color: #92400e; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                <strong>⚠️ PERINGATAN KEAMANAN!</strong><br>
+                Anda mengakses halaman ini tanpa HTTPS. Data registrasi Anda tidak aman. 
+                Silakan gunakan <strong>https://</strong> untuk keamanan yang lebih baik.
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('register.submit') }}">
             @csrf
 

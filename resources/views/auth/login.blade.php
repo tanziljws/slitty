@@ -407,6 +407,14 @@
                 </div>
             @endif
 
+            @if(!isset($isSecure) || !$isSecure)
+                <div class="error-message" style="background: #fef3c7; border: 2px solid #f59e0b; color: #92400e; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <strong>⚠️ PERINGATAN KEAMANAN!</strong><br>
+                    Anda mengakses halaman ini tanpa HTTPS. Data login Anda tidak aman. 
+                    Silakan gunakan <strong>https://</strong> untuk keamanan yang lebih baik.
+                </div>
+            @endif
+
             <!-- Panel Login -->
             <div id="login-panel" class="auth-panel active">
                 <form method="POST" action="{{ route('login') }}">

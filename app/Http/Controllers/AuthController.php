@@ -27,6 +27,18 @@ class AuthController extends Controller
             return redirect()->route('user.dashboard');
         }
         
+        // Peringatan jika tidak menggunakan HTTPS
+        $isSecure = request()->secure() || 
+                    request()->header('X-Forwarded-Proto') === 'https' ||
+                    request()->header('X-Forwarded-Ssl') === 'on';
+        
+        if (!$isSecure) {
+            \Log::warning('Login page accessed without HTTPS', [
+                'url' => request()->url(),
+                'ip' => request()->ip(),
+            ]);
+        }
+        
         // Generate captcha sederhana untuk login (dan register di halaman yang sama)
         $a = rand(1, 9);
         $b = rand(1, 9);
@@ -36,11 +48,27 @@ class AuthController extends Controller
             'register_captcha_answer' => $sum,
         ]);
 
-        return view('auth.login', compact('a', 'b'));
+        return view('auth.login', compact('a', 'b', 'isSecure'));
     }
 
     public function login(Request $request)
     {
+        // Peringatan jika login tanpa HTTPS
+        $isSecure = $request->secure() || 
+                    $request->header('X-Forwarded-Proto') === 'https' ||
+                    $request->header('X-Forwarded-Ssl') === 'on';
+        
+        if (!$isSecure) {
+            \Log::warning('Login attempt without HTTPS', [
+                'email' => $request->input('email'),
+                'ip' => $request->ip(),
+                'url' => $request->url(),
+            ]);
+            return back()->withErrors([
+                'email' => '⚠️ KONEKSI TIDAK AMAN! Silakan gunakan HTTPS untuk login. Password Anda tidak akan dikirim dengan aman.',
+            ])->onlyInput('email');
+        }
+        
         // Validasi input dari form (email atau username)
         $request->validate([
             'email' => ['required', 'string'],
@@ -171,16 +199,44 @@ class AuthController extends Controller
             return redirect('/dashboard');
         }
 
+        // Peringatan jika tidak menggunakan HTTPS
+        $isSecure = request()->secure() || 
+                    request()->header('X-Forwarded-Proto') === 'https' ||
+                    request()->header('X-Forwarded-Ssl') === 'on';
+        
+        if (!$isSecure) {
+            \Log::warning('Register page accessed without HTTPS', [
+                'url' => request()->url(),
+                'ip' => request()->ip(),
+            ]);
+        }
+
         // Generate captcha sederhana untuk register
         $a = rand(1, 9);
         $b = rand(1, 9);
         session(['register_captcha_answer' => $a + $b]);
 
-        return view('auth.register', compact('a', 'b'));
+        return view('auth.register', compact('a', 'b', 'isSecure'));
     }
 
     public function register(Request $request)
     {
+        // Peringatan jika register tanpa HTTPS
+        $isSecure = $request->secure() || 
+                    $request->header('X-Forwarded-Proto') === 'https' ||
+                    $request->header('X-Forwarded-Ssl') === 'on';
+        
+        if (!$isSecure) {
+            \Log::warning('Register attempt without HTTPS', [
+                'email' => $request->input('email'),
+                'ip' => $request->ip(),
+                'url' => $request->url(),
+            ]);
+            return back()->withErrors([
+                'email' => '⚠️ KONEKSI TIDAK AMAN! Silakan gunakan HTTPS untuk register. Data Anda tidak akan dikirim dengan aman.',
+            ])->withInput();
+        }
+        
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
