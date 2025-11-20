@@ -67,6 +67,7 @@ class AuthController extends Controller
             : ['username' => $login, 'password' => $request->password];
 
         if (Auth::guard('petugas')->attempt($petugasCredentials, $remember)) {
+            // Regenerate session setelah login berhasil
             $request->session()->regenerate();
             
             // Pastikan session tersimpan dengan benar
@@ -78,10 +79,22 @@ class AuthController extends Controller
                     'email' => $petugas->email,
                     'username' => $petugas->username ?? 'N/A',
                     'session_id' => $request->session()->getId(),
+                    'guard_check' => Auth::guard('petugas')->check(),
                 ]);
                 
-                // Pastikan session tersimpan dengan explicitly save
+                // Pastikan session tersimpan - save setelah regenerate
                 $request->session()->save();
+                
+                // Double check: pastikan guard masih check setelah save
+                if (!Auth::guard('petugas')->check()) {
+                    \Log::error('Petugas guard check failed after session save', [
+                        'petugas_id' => $petugas->id,
+                        'session_id' => $request->session()->getId(),
+                    ]);
+                    // Re-attempt untuk memastikan session tersimpan
+                    Auth::guard('petugas')->login($petugas, $remember);
+                    $request->session()->save();
+                }
             }
             
             // Petugas/admin tetap diarahkan ke dashboard admin
