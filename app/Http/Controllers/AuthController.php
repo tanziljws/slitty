@@ -69,7 +69,8 @@ class AuthController extends Controller
         if (Auth::guard('petugas')->attempt($petugasCredentials, $remember)) {
             $request->session()->regenerate();
             // Petugas/admin tetap diarahkan ke dashboard admin
-            return redirect()->intended('/dashboard');
+            // Gunakan redirect langsung, bukan intended, untuk memastikan selalu ke dashboard
+            return redirect('/dashboard');
         }
 
         // Jika login gagal, tampilkan error
