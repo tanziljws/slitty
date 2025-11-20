@@ -38,64 +38,6 @@ class PetugasController extends Controller
             'password' => 'required|string|min:6',
         ]);
 
-        Petugas::create([
-            'username' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-
-        return redirect()->route('petugas.index')->with('success', 'Petugas berhasil ditambahkan');
-    }
-
-    public function edit(Petugas $petuga) // gunakan singular karena route model binding
-    {
-        return view('petugas.edit', ['petugas' => $petuga]);
-    }
-
-    public function update(Request $request, Petugas $petuga)
-    {
-        $request->validate([
-            'username' => 'required|string|max:255',
-            'email' => 'required|email|unique:petugas,email,' . $petuga->id,
-            'password' => 'nullable|string|min:6',
-        ]);
-
-        $data = [
-            'username' => $request->username,
-            'email' => $request->email,
-        ];
-
-        if ($request->password) {
-            $data['password'] = Hash::make($request->password);
-        }
-
-        $petuga->update($data);
-
-        return redirect()->route('petugas.index')->with('success', 'Petugas berhasil diupdate');
-    }
-
-    public function show(Request $request, Petugas $petugas)
-    {
-        // Jika request expects JSON (API), return JSON
-        if ($request->expectsJson() || $request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'data' => $petugas,
-            ]);
-        }
-        
-        // Web request - return view (if needed)
-        return view('petugas.show', compact('petugas'));
-    }
-
-    public function store(Request $request)
-    {
-        $request->validate([
-            'username' => 'required|string|max:255',
-            'email' => 'required|email|unique:petugas',
-            'password' => 'required|string|min:6',
-        ]);
-
         $petugas = Petugas::create([
             'username' => $request->username,
             'email' => $request->email,
@@ -112,6 +54,11 @@ class PetugasController extends Controller
         }
 
         return redirect()->route('petugas.index')->with('success', 'Petugas berhasil ditambahkan');
+    }
+
+    public function edit(Petugas $petuga) // gunakan singular karena route model binding
+    {
+        return view('petugas.edit', ['petugas' => $petuga]);
     }
 
     public function update(Request $request, Petugas $petuga)
@@ -143,6 +90,20 @@ class PetugasController extends Controller
         }
 
         return redirect()->route('petugas.index')->with('success', 'Petugas berhasil diupdate');
+    }
+
+    public function show(Request $request, Petugas $petugas)
+    {
+        // Jika request expects JSON (API), return JSON
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $petugas,
+            ]);
+        }
+        
+        // Web request - return view (if needed)
+        return view('petugas.show', compact('petugas'));
     }
 
     public function destroy(Request $request, Petugas $petuga)
