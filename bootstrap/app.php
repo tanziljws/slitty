@@ -13,9 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias([
-            'auth.petugas' => \App\Http\Middleware\AuthPetugas::class,
-        ]);
+        // Note: auth:petugas menggunakan built-in Laravel auth middleware
+        // Custom AuthPetugas middleware bisa digunakan dengan alias 'auth.petugas' jika diperlukan
+        // Tapi untuk route yang menggunakan 'auth:petugas', Laravel akan otomatis menggunakan guard 'petugas'
         
         // Use custom VerifyCsrfToken middleware
         $middleware->validateCsrfTokens(except: [

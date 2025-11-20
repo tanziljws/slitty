@@ -18,11 +18,18 @@ class RedirectIfAuthenticated
      */
     public function handle(Request $request, Closure $next, ...$guards)
     {
-        $guards = empty($guards) ? [null] : $guards;
+        $guards = empty($guards) ? ['web', 'petugas'] : $guards;
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                return redirect('/dashboard');
+                // Jika login sebagai petugas, redirect ke dashboard admin
+                if ($guard === 'petugas') {
+                    return redirect('/dashboard');
+                }
+                // Jika login sebagai user biasa (web guard), redirect ke homepage
+                if ($guard === 'web') {
+                    return redirect()->route('user.dashboard');
+                }
             }
         }
 
