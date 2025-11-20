@@ -530,9 +530,13 @@ Route::get('/', function () {
                     ->limit(5)
                     ->pluck('id');
                 
-                // Load dengan relasi
+                // Load dengan relasi - optimasi: hanya ambil field yang diperlukan
                 if ($latestGaleriIds->isNotEmpty()) {
-                    $latestGalleries = \App\Models\Galery::with(['post.kategori', 'fotos'])
+                    $latestGalleries = \App\Models\Galery::with([
+                        'post:id,judul,kategori_id,created_at',
+                        'post.kategori:id,judul',
+                        'fotos:id,galery_id,file'
+                    ])
                         ->whereIn('id', $latestGaleriIds)
                         ->get()
                         ->filter(function($gallery) {
@@ -543,7 +547,8 @@ Route::get('/', function () {
                         ->sortByDesc(function($gallery) {
                             return $gallery->post->created_at ?? now();
                         })
-                        ->values();
+                        ->values()
+                        ->take(5); // Pastikan max 5 items
                 }
             }
         } catch (\Exception $e) {
@@ -612,8 +617,8 @@ Route::get('/', function () {
                 }
                 
                 if ($hasSiteSettings) {
-                    // Pre-load settings jika diperlukan
-                    \App\Models\SiteSetting::all();
+                    // Pre-load settings jika diperlukan - optimasi: hanya ambil yang diperlukan
+                    \App\Models\SiteSetting::select('key', 'value', 'group')->get();
                 }
             } catch (\Exception $e) {
                 \Log::warning('SiteSetting table error (non-fatal): ' . $e->getMessage());
